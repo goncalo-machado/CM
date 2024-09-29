@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'models.dart';
 
+
 void main() {
   runApp(MyApp());
 }
@@ -62,12 +63,48 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _pokemonDetails(BuildContext context, String url) async {
+    var response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPage(data: data),
+          ),
+        );
+        // Navigator.push(
+        //     context,
+        //     PageRouteBuilder(
+        //         pageBuilder: (context, animation, secondaryAnimation) =>
+        //             DetailsPage(data: data),
+        //         transitionsBuilder:
+        //             (context, animation, secondaryAnimation, child) {
+        //           const begin = Offset(1.0, 0.0);
+        //           const end = Offset.zero;
+        //           const curve = Curves.ease;
+
+        //           var tween = Tween(begin: begin, end: end)
+        //               .chain(CurveTween(curve: curve));
+
+        //           return SlideTransition(
+        //             position: animation.drive(tween),
+        //             child: child,
+        //           );
+        //         }));
+      }
+    } else {
+      // Handle error
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            const Text("Pokedex", style: TextStyle(fontFamily: 'PokemonClassic')),
+        title: const Text("Pokedex",
+            style: TextStyle(fontFamily: 'PokemonClassic')),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
       drawer: Drawer(
@@ -110,11 +147,40 @@ class _HomePageState extends State<HomePage> {
               children: [
                 for (var pokemon in pokemons)
                   ListTile(
-                      title: Text(pokemon.name),
-                      leading: Text("#${pokemon.number}"),
-                      onTap: null)
+                    title: Text(pokemon.name),
+                    leading: Text("#${pokemon.number}"),
+                    onTap: () => _pokemonDetails(context, pokemon.url),
+                  )
               ],
             ),
+    );
+  }
+}
+
+class DetailsPage extends StatelessWidget {
+  final dynamic data;
+
+  const DetailsPage({
+    required this.data,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    print(data);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Second Route'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Data: $data!'),
+        ),
+      ),
     );
   }
 }
