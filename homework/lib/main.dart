@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 60, 62, 209)),
+        fontFamily: 'PokemonClassic',
       ),
       home: HomePage(),
     );
@@ -65,7 +66,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Pokedex"),
+        title:
+            const Text("Pokedex", style: TextStyle(fontFamily: 'PokemonClassic')),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
       drawer: Drawer(

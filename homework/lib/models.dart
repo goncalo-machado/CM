@@ -10,9 +10,10 @@ class PokemonBase {
   });
 
   factory PokemonBase.fromJson(Map<String, dynamic> json) {
+    String name = json['name'];
     String url = json['url'];
     int number = int.parse(url.split('/')[6]);
 
-    return PokemonBase(name: json['name'], url: url, number: number);
+    return PokemonBase(name: name[0].toUpperCase() + name.substring(1), url: url, number: number);
   }
 }
