@@ -26,19 +26,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// class SplashScreen extends StatelessWidget {
-//   const SplashScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: Center(
-//         child: CircularProgressIndicator(),
-//       ),
-//     );
-//   }
-// }
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -127,16 +114,5 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
     );
-
-    // ListView.builder(
-    //     itemCount: dataList.length,
-    //     itemBuilder: (context, index) {
-    //       final item = dataList[index];
-    //       return ListTile(
-    //         title: Text(item.name),
-    //         subtitle: Text(item.url),
-    //       );
-    //     },
-    //   ),
   }
 }
