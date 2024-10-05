@@ -341,46 +341,6 @@ class FavoritesPage extends StatelessWidget {
   }
 }
 
-// class TeamPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Consumer<MyAppState>(
-//       builder: (context, appState, child) {
-//         return GridView.builder(
-//           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//             crossAxisCount: 2,
-//             crossAxisSpacing: 10.0,
-//             mainAxisSpacing: 10.0,
-//           ),
-//           itemCount: appState.team.length,
-//           itemBuilder: (context, index) {
-//             final pokemon = appState.team[index];
-//             return Card(
-//               child: Column(
-//                 children: [
-//                   Container(
-//                     height: 150,
-//                     width: 150,
-//                     decoration: BoxDecoration(
-//                       image: DecorationImage(
-//                         image: NetworkImage(pokemon.image),
-//                         fit: BoxFit.cover,
-//                       ),
-//                     ),
-//                   ),
-//                   FittedBox(
-//                     child: Text('#${pokemon.number} ${pokemon.name}'),
-//                   ),
-//                 ],
-//               ),
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
-
 class TeamPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -417,25 +377,30 @@ class TeamPage extends StatelessWidget {
                                 )
                               : null),
                     ),
-                    Text(pokemon != null ? '#${pokemon.number} ${pokemon.name}' : "Slot #${index + 1}"),
+                    Text(pokemon != null
+                        ? '#${pokemon.number} ${pokemon.name}'
+                        : "Slot #${index + 1}"),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: pokemon != null ? [
-                        IconButton(
-                          icon: Icon(appState.isFavorite(pokemon)
-                              ? Icons.favorite
-                              : Icons.favorite_border),
-                          onPressed: () => appState.toggleFavorite(pokemon),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            appState.isOnTeam(pokemon)
-                                ? Icons.remove
-                                : Icons.add,
-                          ),
-                          onPressed: () => appState.toggleTeam(pokemon),
-                        ),
-                      ] : [],
+                      children: pokemon != null
+                          ? [
+                              IconButton(
+                                icon: Icon(appState.isFavorite(pokemon)
+                                    ? Icons.favorite
+                                    : Icons.favorite_border),
+                                onPressed: () =>
+                                    appState.toggleFavorite(pokemon),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  appState.isOnTeam(pokemon)
+                                      ? Icons.remove
+                                      : Icons.add,
+                                ),
+                                onPressed: () => appState.toggleTeam(pokemon),
+                              ),
+                            ]
+                          : [],
                     ),
                   ],
                 ),
