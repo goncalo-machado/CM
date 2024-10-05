@@ -33,9 +33,13 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
-  var favorites = <PokemonBase>[];
+  var favorites = <Pokemon>[];
+  var team = <Pokemon>[];
+  var detailsClicked = false;
+  List<Pokemon> pokemons = [];
+  bool isLoading = true;
 
-  void toggleFavorite(PokemonBase pokemon) {
+  void toggleFavorite(Pokemon pokemon) {
     if (isFavorite(pokemon)) {
       favorites.remove(pokemon);
     } else {
@@ -44,8 +48,57 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isFavorite(PokemonBase pokemon) {
+  bool isFavorite(Pokemon pokemon) {
     return favorites.contains(pokemon);
+  }
+
+  void toggleTeam(Pokemon pokemon) {
+    if (isOnTeam(pokemon)) {
+      team.remove(pokemon);
+    } else {
+      if (team.length < 6) {
+        team.add(pokemon);
+      }
+    }
+    notifyListeners();
+  }
+
+  bool isOnTeam(Pokemon pokemon) {
+    return team.contains(pokemon);
+  }
+
+  Future<void> pokemonDetails(BuildContext context, Pokemon pokemon) async {
+    var response = await http.get(Uri.parse(pokemon.url));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      pokemon.fromDetailsJson(data);
+      if (context.mounted) {
+        detailsClicked = false;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsPage(pokemon: pokemon),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> fetchPokemons() async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://pokeapi.co/api/v2/pokemon?limit=10000'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['results'] as List<dynamic>;
+        pokemons = data.map((item) => Pokemon.fromJson(item)).toList();
+        isLoading = false;
+        notifyListeners();
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
   }
 }
 
@@ -57,178 +110,75 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<PokemonBase> pokemons = [];
-  bool isLoading = true;
-  bool detailsClicked = false;
-
   @override
   void initState() {
     super.initState();
-    fetchPokemons();
-  }
-
-  Future<void> fetchPokemons() async {
-    try {
-      final response = await http
-          .get(Uri.parse('https://pokeapi.co/api/v2/pokemon?limit=10000'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['results'] as List<dynamic>;
-        setState(() {
-          pokemons = data.map((item) => PokemonBase.fromJson(item)).toList();
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load data');
-      }
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  Future<void> _pokemonDetails(
-      BuildContext context, PokemonBase pokemon) async {
-    var response = await http.get(Uri.parse(pokemon.url));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final details = PokemonDetails.fromJson(data);
-      if (context.mounted) {
-        detailsClicked = false;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                DetailsPage(details: details, pokemon: pokemon),
-          ),
-        );
-        // Navigator.push(
-        //     context,
-        //     PageRouteBuilder(
-        //         pageBuilder: (context, animation, secondaryAnimation) =>
-        //             DetailsPage(data: data),
-        //         transitionsBuilder:
-        //             (context, animation, secondaryAnimation, child) {
-        //           const begin = Offset(1.0, 0.0);
-        //           const end = Offset.zero;
-        //           const curve = Curves.ease;
-
-        //           var tween = Tween(begin: begin, end: end)
-        //               .chain(CurveTween(curve: curve));
-
-        //           return SlideTransition(
-        //             position: animation.drive(tween),
-        //             child: child,
-        //           );
-        //         }));
-      }
-    }
+    final appState = Provider.of<MyAppState>(context, listen: false);
+    appState.fetchPokemons();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Pokedex",
-            style: TextStyle(fontFamily: 'PokemonClassic')),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      // drawer: Drawer(
-      //   child: ListView(
-      //     padding: EdgeInsets.zero,
-      //     children: [
-      //       SizedBox(
-      //         height: 100,
-      //         child: DrawerHeader(
-      //           decoration: BoxDecoration(
-      //             color: Theme.of(context).colorScheme.primaryContainer,
-      //           ),
-      //           child: Text('Menu'),
-      //         ),
-      //       ),
-      //       ListTile(
-      //         title: const Text('Pokedex'),
-      //         onTap: () {
-      //           print("Item 1");
-      //         },
-      //       ),
-      //       ListTile(
-      //         title: const Text('Team'),
-      //         onTap: () {
-      //           print("Item 2");
-      //         },
-      //       ),
-      //       ListTile(
-      //         title: const Text('Favorites'),
-      //         onTap: () {
-      //           print("Item 2");
-      //         },
-      //       ),
-      //     ],
-      //   ),
-      // ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Consumer<MyAppState>(
-              builder: (context, value, child) {
-                return ListView.builder(
-                  itemCount: pokemons.length,
-                  itemBuilder: (context, index) {
-                    final pokemon = pokemons[index];
-                    final icon = value.isFavorite(pokemon)
-                        ? Icons.favorite
-                        : Icons.favorite_border;
-                    return ListTile(
-                      title: Text(pokemon.name),
-                      leading: Text("#${pokemon.number}"),
-                      onTap: () => {
-                        if (!detailsClicked)
-                          {_pokemonDetails(context, pokemon)},
-                        detailsClicked = true,
-                      },
-                      trailing: IconButton(
-                          onPressed: () {
-                            value.toggleFavorite(pokemon);
-                          },
-                          icon: Icon(icon)),
-                    );
-                  },
-                );
-              },
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+          appBar: AppBar(
+            title: const Text("Pokedex",
+                style: TextStyle(fontFamily: 'PokemonClassic')),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            bottom: TabBar(
+              tabs: [
+                Tab(
+                  text: "Pokedex",
+                ),
+                Tab(text: "Favorites"),
+                Tab(text: "Team"),
+              ],
+              labelStyle: TextStyle(
+                fontSize: 11.0,
+                fontFamily: 'PokemonClassic',
+              ),
             ),
+          ),
+          body: TabBarView(children: [
+            PokedexPage(),
+            FavoritesPage(),
+            TeamPage(),
+          ])),
     );
   }
 }
 
 class DetailsPage extends StatelessWidget {
-  final PokemonDetails details;
-  final PokemonBase pokemon;
+  final Pokemon pokemon;
 
   const DetailsPage({
-    required this.details,
     required this.pokemon,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    print(details);
-    // for (var type in details.types) {
-    //   Color? color = typeColors["Fire"];
-    //   Color? color2 = typeColors[type];
-    //   print(color.toString());
-    //   print(color2.toString());
-    // }
-
-    return Consumer<MyAppState>(builder: (context, value, child) {
+    return Consumer<MyAppState>(builder: (context, appState, child) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('#${details.number} ${details.name}'),
+          title: Text('#${pokemon.number} ${pokemon.name}'),
           actions: [
             IconButton(
-                icon: Icon(value.isFavorite(pokemon)
-                    ? Icons.favorite
-                    : Icons.favorite_border),
                 onPressed: () {
-                  value.toggleFavorite(pokemon);
+                  appState.toggleTeam(pokemon);
+                },
+                icon: Icon(
+                  appState.isOnTeam(pokemon) ? Icons.remove : Icons.add,
+                )),
+            IconButton(
+                icon: Icon(
+                  appState.isFavorite(pokemon)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                ),
+                onPressed: () {
+                  appState.toggleFavorite(pokemon);
                 }),
           ],
         ),
@@ -242,7 +192,7 @@ class DetailsPage extends StatelessWidget {
                   decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                       image: DecorationImage(
-                        image: NetworkImage(details.image, scale: 0.2),
+                        image: NetworkImage(pokemon.image, scale: 0.2),
                         fit: BoxFit.cover,
                       ))),
               const Divider(
@@ -262,10 +212,10 @@ class DetailsPage extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            "Height ${details.height} mt",
+                            "Height ${pokemon.height} mt",
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12.0, // Set the desired font size
+                              fontSize: 12.0,
                             ),
                           ),
                         ),
@@ -279,10 +229,10 @@ class DetailsPage extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            "Weight ${details.weight} Kg",
+                            "Weight ${pokemon.weight} Kg",
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12.0, // Set the desired font size
+                              fontSize: 12.0,
                             ),
                           ),
                         ),
@@ -296,15 +246,15 @@ class DetailsPage extends StatelessWidget {
                 child: Row(
                   children: [
                     Text("Types:"),
-                    for (var type in details.types)
+                    for (var type in pokemon.types)
                       Chip(
                         label: Text(type),
                         backgroundColor: typeColors[type],
                         shape: const RoundedRectangleBorder(
                             borderRadius:
                                 BorderRadius.all(Radius.circular(20))),
-                        visualDensity: const VisualDensity(
-                            horizontal: 0, vertical: -4), // Add this line
+                        visualDensity:
+                            const VisualDensity(horizontal: 0, vertical: -4),
                       ),
                   ],
                 ),
@@ -314,5 +264,133 @@ class DetailsPage extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class PokedexPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MyAppState>(builder: (context, appState, child) {
+      return appState.isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: appState.pokemons.length,
+              itemBuilder: (context, index) {
+                final pokemon = appState.pokemons[index];
+                final icon = appState.isFavorite(pokemon)
+                    ? Icons.favorite
+                    : Icons.favorite_border;
+                return ListTile(
+                  title: Text(pokemon.name),
+                  leading: Text("#${pokemon.number}"),
+                  onTap: () => {
+                    if (!appState.detailsClicked)
+                      {
+                        appState.pokemonDetails(context, pokemon),
+                        appState.detailsClicked = true,
+                      }
+                  },
+                  trailing: IconButton(
+                      onPressed: () {
+                        appState.toggleFavorite(pokemon);
+                      },
+                      icon: Icon(icon)),
+                );
+              },
+            );
+    });
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MyAppState>(
+      builder: (context, appState, child) {
+        return appState.favorites.isEmpty
+            ? Center(
+                child: Text("No favorites"),
+              )
+            : ListView.builder(
+                itemCount: appState.favorites.length,
+                itemBuilder: (context, index) {
+                  final pokemon = appState.favorites[index];
+                  final icon = appState.isFavorite(pokemon)
+                      ? Icons.favorite
+                      : Icons.favorite_border;
+                  return ListTile(
+                    title: Text(pokemon.name),
+                    leading: Text("#${pokemon.number}"),
+                    onTap: () => {
+                      if (!appState.detailsClicked)
+                        {
+                          appState.pokemonDetails(context, pokemon),
+                        },
+                      appState.detailsClicked = true,
+                    },
+                    trailing: IconButton(
+                        onPressed: () {
+                          appState.toggleFavorite(pokemon);
+                        },
+                        icon: Icon(icon)),
+                  );
+                },
+              );
+      },
+    );
+  }
+}
+
+class TeamPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MyAppState>(
+      builder: (context, appState, child) {
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10.0,
+            mainAxisSpacing: 10.0,
+          ),
+          itemCount: appState.team.length,
+          itemBuilder: (context, index) {
+            final pokemon = appState.team[index];
+            return Card(
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        height: 100,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: NetworkImage(pokemon.image),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: Icon(appState.isFavorite(pokemon)
+                              ? Icons.favorite
+                              : Icons.favorite_border),
+                          onPressed: () {
+                            appState.toggleFavorite(pokemon);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text('#${pokemon.number} ${pokemon.name}'),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

@@ -24,73 +24,55 @@ Map<String, Color> typeColors = {
   "Shadow": Color.fromRGBO(100, 78, 136, 1.0),
 };
 
-class PokemonBase {
-  final String name;
-  final String url;
-  final int number;
+class Pokemon {
+  String name;
+  int number;
+  String url;
 
-  const PokemonBase({
+  String image = "";
+  double weight = 0;
+  double height = 0;
+
+  List<String> types = [];
+
+  Pokemon({
     required this.name,
-    required this.url,
     required this.number,
+    required this.url,
   });
 
-  factory PokemonBase.fromJson(Map<String, dynamic> json) {
+  factory Pokemon.fromJson(Map<String, dynamic> json) {
     String name = json['name'];
     String url = json['url'];
     int number = int.parse(url.split('/')[6]);
 
-    return PokemonBase(
+    return Pokemon(
         name: name[0].toUpperCase() + name.substring(1),
         url: url,
         number: number);
   }
-}
 
-class PokemonDetails {
-  final String name;
-  final int number;
-
-  final String image;
-  final double weight;
-  final double height;
-
-  final List<String> types;
-
-  const PokemonDetails({
-    required this.name,
-    required this.number,
-    required this.image,
-    required this.height,
-    required this.weight,
-    required this.types,
-  });
-
-  factory PokemonDetails.fromJson(Map<String, dynamic> json) {
-    String name = json['name'];
-    int number = json['id'];
+  void fromDetailsJson(Map<String, dynamic> json) {
     String image = json['sprites']['front_default'];
-    final double weight = json['weight']/10;
-    final double height = json['height']/10;
+    final double weight = json['weight'] / 10;
+    final double height = json['height'] / 10;
 
     List<dynamic> jsonTypes = json['types'];
     List<String> types = [];
 
     for (var type in jsonTypes) {
-      types.add(type['type']['name'][0].toUpperCase() + type['type']['name'].substring(1));
+      types.add(type['type']['name'][0].toUpperCase() +
+          type['type']['name'].substring(1));
     }
 
-    return PokemonDetails(
-        name: name[0].toUpperCase() + name.substring(1),
-        number: number,
-        image: image,
-        weight: weight,
-        height: height,
-        types: types);
+    this.height = height;
+    this.weight = weight;
+    this.image = image;
+    this.types = types;
   }
 
   @override
   String toString() {
-    return "{ Name : $name, Number : $number, Image : $image, Weight : $weight, Height : $height, Types : $types";
+    return "{ Name : $name, Number : $number, Url : $url, Image : $image, Weight : $weight, Height : $height, Types : $types";
   }
 }
