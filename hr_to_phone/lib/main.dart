@@ -56,6 +56,8 @@ class _MyAppState extends State<MyApp> {
         setState(() {
           heartRate = event.value;
         });
+        var message = {'HeartRate': event.value};
+        _watch.sendMessage(message);
       }
     });
   }
