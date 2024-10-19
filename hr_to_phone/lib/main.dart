@@ -43,9 +43,9 @@ class _MyAppState extends State<MyApp> {
     _watch.messageStream.listen((e) {
       print("Message: $e");
       setState(() => _log.add('Received message: $e'));
-      if (e["Command"].toString() == "START_GAME"){
+      if (e["Command"].toString() == "START_GAME") {
         startGame();
-      }else if(e["Command"].toString() == "END_GAME"){
+      } else if (e["Command"].toString() == "END_GAME") {
         endGame();
       }
     });
