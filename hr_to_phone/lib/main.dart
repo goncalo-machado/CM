@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:workout/workout.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:flutter/material.dart';
 
@@ -94,6 +95,7 @@ class _MyAppState extends State<MyApp> {
     if (gameStarted) {
       await workout.stop();
       setState(() => gameStarted = false);
+      WakelockPlus.disable();
     }
   }
 
@@ -114,6 +116,7 @@ class _MyAppState extends State<MyApp> {
         debugPrint('All requested features supported');
       }
       setState(() => gameStarted = true);
+      WakelockPlus.enable();
     }
   }
 }

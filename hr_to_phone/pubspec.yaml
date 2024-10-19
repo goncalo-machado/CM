@@ -13,6 +13,7 @@ dependencies:
   watch_connectivity: ^0.2.0
   wear_plus: ^1.2.1
   workout: ^0.6.5
+  wakelock_plus: ^1.2.8
   
 dev_dependencies:
   flutter_test:
