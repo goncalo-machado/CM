@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:workout/workout.dart';
 
 import 'package:flutter/material.dart';
 
@@ -21,90 +22,96 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _watch = WatchConnectivity();
 
-  var _supported = false;
-  var _paired = false;
-  var _reachable = false;
-  var _context = <String, dynamic>{};
-  var _receivedContexts = <Map<String, dynamic>>[];
-  final _log = <String>[];
+  final workout = Workout();
 
-  Timer? timer;
+  final exerciseType = ExerciseType.walking;
+  final features = [
+    WorkoutFeature.heartRate,
+  ];
+
+  final enableGps = false;
+
+  double heartRate = 0;
+  bool gameStarted = false;
+
+  final _log = <String>[];
 
   @override
   void initState() {
     super.initState();
 
-    _watch.messageStream
-        .listen((e) => setState(() => _log.add('Received message: $e')));
+    _watch.messageStream.listen((e) {
+      print("Message: $e");
+      setState(() => _log.add('Received message: $e'));
+      if (e["Command"].toString() == "START_GAME"){
+        startGame();
+      }else if(e["Command"].toString() == "END_GAME"){
+        endGame();
+      }
+    });
 
-    _watch.contextStream
-        .listen((e) => setState(() => _log.add('Received context: $e')));
-
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  void initPlatformState() async {
-    _supported = await _watch.isSupported;
-    _paired = await _watch.isPaired;
-    _reachable = await _watch.isReachable;
-    _context = await _watch.applicationContext;
-    _receivedContexts = await _watch.receivedApplicationContexts;
-    setState(() {});
+    workout.stream.listen((event) {
+      print('${event.feature}: ${event.value} (${event.timestamp})');
+      if (event.feature == WorkoutFeature.heartRate) {
+        setState(() {
+          heartRate = event.value;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black),
       home: AmbientMode(
-      builder: (context, mode, child) => child!,
-      child: Scaffold(
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: SafeArea(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(width: 16),
-                  const Text('Log'),
-                  ..._log.reversed.map(Text.new),
-                ],
+        builder: (context, mode, child) => child!,
+        child: Scaffold(
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Heart rate: $heartRate'),
+                    const SizedBox(width: 16),
+                    const Text('Log'),
+                    ..._log.reversed.map(Text.new),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 
-  void startGame() {
-    final message = {'Command': 'START_GAME'};
-    _watch.sendMessage(message);
-    setState(() => _log.add('Sent message: $message'));
+  void endGame() async {
+    if (gameStarted) {
+      await workout.stop();
+      setState(() => gameStarted = false);
+    }
   }
 
-  void endGame() {
-    final message = {'Command': 'END_GAME'};
-    _watch.sendMessage(message);
-    setState(() => _log.add('Sent message: $message'));
+  void startGame() async {
+    if (!gameStarted) {
+      final supportedExerciseTypes = await workout.getSupportedExerciseTypes();
+      debugPrint('Supported exercise types: ${supportedExerciseTypes.length}');
+      final result = await workout.start(
+        // In a real application, check the supported exercise types first
+        exerciseType: exerciseType,
+        features: features,
+        enableGps: enableGps,
+      );
+      if (result.unsupportedFeatures.isNotEmpty) {
+        debugPrint('Unsupported features: ${result.unsupportedFeatures}');
+        // In a real application, update the UI to match
+      } else {
+        debugPrint('All requested features supported');
+      }
+      setState(() => gameStarted = true);
+    }
   }
-
-  // void sendContext() {
-  //   _count++;
-  //   final context = {'data': _count};
-  //   _watch.updateApplicationContext(context);
-  //   setState(() => _log.add('Sent context: $context'));
-  // }
-
-  // void toggleBackgroundMessaging() {
-  //   if (timer == null) {
-  //     timer = Timer.periodic(const Duration(seconds: 1), (_) => sendMessage());
-  //   } else {
-  //     timer?.cancel();
-  //     timer = null;
-  //   }
-  //   setState(() {});
-  // }
 }

@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required for heart rate -->
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+
     <application
         android:label="hr_to_phone"
         android:name="${applicationName}"
