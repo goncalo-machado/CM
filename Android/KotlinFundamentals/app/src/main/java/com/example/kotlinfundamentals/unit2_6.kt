@@ -79,7 +79,7 @@ private class Song() {
     fun printSongDescription() {
         println("$title, performed by $artist, was released in $yearPublished.")
     }
-    
+
     val isPopular: Boolean
         get() = playCount >= 1000
 }
