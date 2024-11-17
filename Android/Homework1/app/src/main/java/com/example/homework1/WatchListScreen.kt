@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun WatchListScreen(
     modifier: Modifier = Modifier, watchListViewModel: WatchListViewModel = viewModel()
 ) {
-    var showEntryField by remember { mutableStateOf(false) }
+    var showEntryField by rememberSaveable { mutableStateOf(false) }
 
     Scaffold { padding ->
         Column(modifier = modifier.padding(padding)) {
@@ -100,7 +101,7 @@ fun WatchListEntryList(
 fun WatchListAddEntryField(
     onAdd: (String) -> Unit, modifier: Modifier = Modifier
 ) {
-    var entryName by remember { mutableStateOf("") }
+    var entryName by rememberSaveable { mutableStateOf("") }
 
     Row {
         TextField(
