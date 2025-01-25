@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cm_project.ui.CameraScreen
 import com.example.cm_project.ui.ExternalAPIScreen
 import com.example.cm_project.ui.HomeScreen
+import com.example.cm_project.ui.ImageViewerScreen
 import com.example.cm_project.ui.MapScreen
 import com.example.cm_project.ui.PushNotificationScreen
 
@@ -56,8 +57,13 @@ fun NavigationHost(navController: NavHostController, modifier: Modifier) {
     NavHost(navController = navController, startDestination = "Home") {
         composable("Home") { HomeScreen() }
         composable("Map") { MapScreen() }
-        composable("Camera") { CameraScreen() }
+        composable("Camera") { CameraScreen(navController = navController) }
         composable("PushNotification") { PushNotificationScreen() }
         composable("ExternalAPI") { ExternalAPIScreen() }
+        composable("image_viewer/{imageUri}/{imageName}") { backStackEntry ->
+            val imageUri = backStackEntry.arguments?.getString("imageUri")
+            val imageName = backStackEntry.arguments?.getString("imageName")
+            ImageViewerScreen(imageUri = imageUri, imageName = imageName) // Pass the name and URI
+        }
     }
 }

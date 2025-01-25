@@ -17,6 +17,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,12 +49,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import java.io.File
 
 
 @Composable
-fun CameraScreen() {
+fun CameraScreen(navController: NavController) {
     val context = LocalContext.current
     var hasCameraPermission by remember { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -70,7 +72,7 @@ fun CameraScreen() {
     }
 
     if (hasCameraPermission) {
-        CameraContent()
+        CameraContent(navController)
     } else {
         Box(
             contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()
@@ -81,7 +83,7 @@ fun CameraScreen() {
 }
 
 @Composable
-fun CameraContent() {
+fun CameraContent(navController: NavController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
@@ -148,12 +150,12 @@ fun CameraContent() {
             lifecycleOwner = lifecycleOwner,
             onImageCaptured = { uri -> imageUri = uri })
     } else {
-        SavedImagesScreen(context = LocalContext.current, onOpenCamera = { showCamera = true })
+        SavedImagesScreen(context = LocalContext.current,navController = navController, onOpenCamera = { showCamera = true })
     }
 }
 
 @Composable
-fun SavedImagesScreen(context: Context, onOpenCamera: () -> Unit) {
+fun SavedImagesScreen(context: Context, navController: NavController, onOpenCamera: () -> Unit) {
     val savedImages = remember { getSavedImages(context) }
 
     Box(
@@ -181,7 +183,7 @@ fun SavedImagesScreen(context: Context, onOpenCamera: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(savedImages.size) { index ->
-                    val imageUri = savedImages[index]
+                    val (imageUri, imageName) = savedImages[index]
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -191,10 +193,11 @@ fun SavedImagesScreen(context: Context, onOpenCamera: () -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(150.dp)
+                                .clickable {
+                                    // Navigate to the detailed image screen
+                                    navController.navigate("image_viewer/${Uri.encode(imageUri.toString())}/${imageName}")
+                                }
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Assuming image name is the file name, but you can use a different approach
-                        Text(text = imageUri.lastPathSegment ?: "Unnamed")
                     }
                 }
             }
@@ -212,7 +215,7 @@ fun SavedImagesScreen(context: Context, onOpenCamera: () -> Unit) {
     }
 }
 
-fun getSavedImages(context: Context): List<Uri> {
+fun getSavedImages(context: Context): List<Pair<Uri, String>> {
     val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     val projection = arrayOf(
         MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME
@@ -221,16 +224,18 @@ fun getSavedImages(context: Context): List<Uri> {
     val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
     val selectionArgs = arrayOf("Pictures/CMProject/%") // Filter by app-specific folder
 
-    val images = mutableListOf<Uri>()
+    val images = mutableListOf<Pair<Uri, String>>()
     val cursor = context.contentResolver.query(uri, projection, selection, selectionArgs, null)
 
     cursor?.use {
         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+        val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+
         while (cursor.moveToNext()) {
             val id = cursor.getLong(idColumn)
-            val contentUri =
-                ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-            images.add(contentUri)
+            val displayName = cursor.getString(nameColumn) // Fetch the file name
+            val contentUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+            images.add(Pair(contentUri, displayName)) // Add both URI and name
         }
     }
 
@@ -346,3 +351,28 @@ fun saveImageToGallery(imageUri: Uri, imageName: String, context: Context) {
     }
 }
 
+@Composable
+fun ImageViewerScreen(imageUri: String?, imageName: String?) {
+    val context = LocalContext.current
+
+    // Decode the image URI properly
+    val decodedUriString = Uri.decode(imageUri ?: "")
+    val uri = Uri.parse(decodedUriString)
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize().padding(16.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = "$imageName")
+            Spacer(modifier = Modifier.height(16.dp))
+            Image(
+                painter = rememberAsyncImagePainter(uri),
+                contentDescription = null,
+            )
+        }
+    }
+}
