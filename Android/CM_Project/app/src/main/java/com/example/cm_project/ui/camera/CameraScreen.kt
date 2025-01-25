@@ -1,4 +1,4 @@
-package com.example.cm_project.ui
+package com.example.cm_project.ui.camera
 
 import android.Manifest
 import android.content.ContentUris
@@ -150,7 +150,10 @@ fun CameraContent(navController: NavController) {
             lifecycleOwner = lifecycleOwner,
             onImageCaptured = { uri -> imageUri = uri })
     } else {
-        SavedImagesScreen(context = LocalContext.current,navController = navController, onOpenCamera = { showCamera = true })
+        SavedImagesScreen(
+            context = LocalContext.current,
+            navController = navController,
+            onOpenCamera = { showCamera = true })
     }
 }
 
@@ -170,7 +173,7 @@ fun SavedImagesScreen(context: Context, navController: NavController, onOpenCame
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(top = 60.dp)
+                    .padding(top = 16.dp)
 
             )
 
@@ -208,7 +211,7 @@ fun SavedImagesScreen(context: Context, navController: NavController, onOpenCame
             onClick = onOpenCamera,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 90.dp)
+                .padding(bottom = 16.dp)
         ) {
             Text("Open Camera")
         }
@@ -234,7 +237,8 @@ fun getSavedImages(context: Context): List<Pair<Uri, String>> {
         while (cursor.moveToNext()) {
             val id = cursor.getLong(idColumn)
             val displayName = cursor.getString(nameColumn) // Fetch the file name
-            val contentUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+            val contentUri =
+                ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
             images.add(Pair(contentUri, displayName)) // Add both URI and name
         }
     }
@@ -275,7 +279,7 @@ fun CameraPreview(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = 65.dp)
+            .padding(bottom = 16.dp)
     ) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
         Button(
@@ -361,7 +365,9 @@ fun ImageViewerScreen(imageUri: String?, imageName: String?) {
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

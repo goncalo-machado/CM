@@ -1,5 +1,6 @@
 package com.example.cm_project
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,12 +14,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.cm_project.ui.CameraScreen
+import com.example.cm_project.ui.camera.CameraScreen
 import com.example.cm_project.ui.ExternalAPIScreen
 import com.example.cm_project.ui.HomeScreen
-import com.example.cm_project.ui.ImageViewerScreen
-import com.example.cm_project.ui.MapScreen
+import com.example.cm_project.ui.camera.ImageViewerScreen
 import com.example.cm_project.ui.PushNotificationScreen
+import com.example.cm_project.ui.map.MapScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,9 @@ fun ProjectApp() {
             BottomNavigationBar(navController)
         }
     ) { innerPadding ->
-        NavigationHost(navController, Modifier.padding(innerPadding))
+        Box(modifier = Modifier.padding(innerPadding)) {
+            NavigationHost(navController, Modifier.padding(innerPadding))
+        }
     }
 }
 
