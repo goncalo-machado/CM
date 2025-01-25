@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CM_Project</string>
+    <string name="map_name">Map</string>">
+    <string name="camera_name">Camera</string>
+    <string name="push_notication_name">Push Notification</string>
+    <string name="external_api_name">External API</string>
+    <string name="back_button">Back Button</string>
+</resources>
