@@ -4,15 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,15 +26,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
 import com.example.projectcm.database.entities.User
 import com.example.projectcm.database.repositories.UserRepository
+import com.example.projectcm.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.example.projectcm.utils.Result
 
-class LoginViewModel (private val userRepository: UserRepository) : ViewModel() {
+class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _loginResult = MutableStateFlow<Result<User?>>(Result.Start)
     val loginResult: StateFlow<Result<User?>> = _loginResult
 
@@ -57,7 +55,11 @@ class LoginViewModel (private val userRepository: UserRepository) : ViewModel() 
 }
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, onRegisterClick: () -> Unit) {
+fun LoginScreen(
+    viewModel: LoginViewModel,
+    onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit
+) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 

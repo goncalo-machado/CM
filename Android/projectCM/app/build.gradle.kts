@@ -75,4 +75,6 @@ dependencies {
     // Coroutine and Flow
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
 
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
+
 }

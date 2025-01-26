@@ -1,6 +1,7 @@
 package com.example.projectcm
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,9 +15,8 @@ import com.example.projectcm.ui.auth.LoginScreen
 import com.example.projectcm.ui.auth.LoginViewModel
 import com.example.projectcm.ui.auth.RegisterScreen
 import com.example.projectcm.ui.auth.RegisterViewModel
-import com.example.projectcm.ui.home.HomeScreen
-import com.example.projectcm.ui.home.HomeViewModel
-import com.example.projectcm.ui.theme.ProjectCMTheme
+import com.example.projectcm.ui.mainapp.HomeScreen
+import com.example.projectcm.ui.mainapp.HomeViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +37,8 @@ fun AppNavHost(navController: NavHostController, container: AppContainer) {
     val loginViewModel = remember { LoginViewModel(container.userRepository) }
     val registerViewModel = remember { RegisterViewModel(container.userRepository) }
     val homeViewModel = remember { HomeViewModel(container.userRepository) }
+
+    Log.d("AppNavHost", "Recomposing AppNavHost")
 
     NavHost(navController, startDestination = "login") {
         composable("login") {

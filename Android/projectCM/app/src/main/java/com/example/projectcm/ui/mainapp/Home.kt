@@ -1,4 +1,4 @@
-package com.example.projectcm.ui.home
+package com.example.projectcm.ui.mainapp
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
