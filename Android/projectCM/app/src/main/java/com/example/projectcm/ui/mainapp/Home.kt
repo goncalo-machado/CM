@@ -1,5 +1,6 @@
 package com.example.projectcm.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,13 +27,21 @@ import com.example.projectcm.database.repositories.UserRepository
 import com.example.projectcm.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class HomeViewModel(private val userRepository: UserRepository) : ViewModel() {
-    private val _usersResult = MutableStateFlow<Result<List<User>>>(Result.Start)
+    private val _usersResult = MutableStateFlow<Result<List<User>>>(Result.Start).apply {
+        onEach { Log.d("HomeViewModel", "State updated: $it") }
+    }
     val usersResult: StateFlow<Result<List<User>>> = _usersResult
 
+    private var hasFetched = false
+
     fun getUsers() {
+        if (hasFetched) return // Prevent repeated fetches
+        hasFetched = true
+
         viewModelScope.launch {
             _usersResult.value = Result.Loading
             try {
@@ -47,6 +56,7 @@ class HomeViewModel(private val userRepository: UserRepository) : ViewModel() {
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
+    Log.d("HomeScreen", "Recomposing HomeScreen")
     val usersResult by viewModel.usersResult.collectAsState()
 
     // Fetch users when the screen is first loaded
@@ -74,7 +84,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 is Result.Success -> {
                     LazyColumn {
-                        items(result.data) { user ->
+                        items(result.data, key = {it.id}) { user ->
                             UserItem(user)
                         }
                     }
@@ -92,5 +102,6 @@ fun UserItem(user: User) {
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "Username: ${user.username}")
         Text(text = "Password: ${user.password}")
+        Text(text = "Role: ${user.role}")
     }
 }
