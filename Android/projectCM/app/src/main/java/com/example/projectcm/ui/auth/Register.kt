@@ -1,5 +1,6 @@
 package com.example.projectcm.ui.auth
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,8 +41,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(private val userRepository: UserRepository) : ViewModel() {
-    private val _registerResult = MutableStateFlow<Result<Unit>>(Result.Start)
-    val registerResult: StateFlow<Result<Unit>> = _registerResult
+    private val _registerResult = MutableStateFlow<Result<User?>>(Result.Start)
+    val registerResult: StateFlow<Result<User?>> = _registerResult
 
     fun register(username: String, password: String, role: String = "User") {
         viewModelScope.launch {
@@ -51,9 +53,8 @@ class RegisterViewModel(private val userRepository: UserRepository) : ViewModel(
                 } else {
                     val user = User(username = username, password = password, role = role)
                     userRepository.registerUser(user)
-                    _registerResult.value = Result.Success(Unit)
+                    _registerResult.value = Result.Success(user)
                 }
-                _registerResult.value = Result.Success(Unit)
             } catch (e: Exception) {
                 _registerResult.value = Result.Error("Registration failed")
             }
@@ -63,7 +64,7 @@ class RegisterViewModel(private val userRepository: UserRepository) : ViewModel(
 
 @Composable
 fun RegisterScreen(
-    viewModel: RegisterViewModel, onRegisterSuccess: () -> Unit, onLoginClick: () -> Unit
+    viewModel: RegisterViewModel, onRegisterSuccess: (User) -> Unit, onLoginClick: () -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -74,6 +75,15 @@ fun RegisterScreen(
 
     val registerResult by viewModel.registerResult.collectAsState()
 
+    Log.d("RegisterScreen", "Recomposed with registerResult: $registerResult")
+
+    LaunchedEffect(registerResult) {
+        if (registerResult is Result.Success) {
+            (registerResult as Result.Success<User?>).data?.let { user ->
+                onRegisterSuccess(user)
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -158,7 +168,7 @@ fun RegisterScreen(
             // Show error message if any
             when (val result = registerResult) {
                 is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally)) // Center the loader
-                is Result.Success -> onRegisterSuccess()
+                is Result.Success -> null
                 is Result.Error -> Text(result.message, color = MaterialTheme.colorScheme.error)
                 Result.Start -> null
             }

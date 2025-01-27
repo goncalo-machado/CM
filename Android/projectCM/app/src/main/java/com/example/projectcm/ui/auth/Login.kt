@@ -1,5 +1,6 @@
 package com.example.projectcm.ui.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,13 +59,23 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (User) -> Unit,
     onRegisterClick: () -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val loginResult by viewModel.loginResult.collectAsState()
+
+    Log.d("LoginScreen", "Recomposed with loginResult: $loginResult")
+
+    LaunchedEffect(loginResult) {
+        if (loginResult is Result.Success) {
+            (loginResult as Result.Success<User?>).data?.let { user ->
+                onLoginSuccess(user)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -113,7 +125,9 @@ fun LoginScreen(
             // Show error message if any
             when (val result = loginResult) {
                 is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally)) // Center the loader
-                is Result.Success -> onLoginSuccess()
+                is Result.Success -> result.data?.let { user ->
+                    onLoginSuccess(user)
+                }
                 is Result.Error -> Text(result.message, color = MaterialTheme.colorScheme.error)
                 Result.Start -> null
             }
