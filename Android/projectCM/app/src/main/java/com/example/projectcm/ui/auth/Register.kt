@@ -97,7 +97,8 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Username field
-            TextField(value = username,
+            TextField(
+                value = username,
                 onValueChange = { username = it },
                 label = { Text("Username") },
                 modifier = Modifier.fillMaxWidth()
@@ -107,7 +108,8 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password field
-            TextField(value = password,
+            TextField(
+                value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 visualTransformation = PasswordVisualTransformation(),
@@ -117,7 +119,8 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Box(modifier = Modifier.fillMaxWidth()) {
-                TextField(value = selectedRole,
+                TextField(
+                    value = selectedRole,
                     onValueChange = {},
                     label = { Text("Select Role") },
                     modifier = Modifier.fillMaxWidth(),

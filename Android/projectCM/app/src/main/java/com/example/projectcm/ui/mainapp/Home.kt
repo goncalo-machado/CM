@@ -84,7 +84,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 is Result.Success -> {
                     LazyColumn {
-                        items(result.data, key = {it.id}) { user ->
+                        items(result.data, key = { it.id }) { user ->
                             UserItem(user)
                         }
                     }
