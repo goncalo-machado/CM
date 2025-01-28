@@ -117,13 +117,6 @@ fun MapScreen(
                                     mapView.overlays?.remove(marker)
                                 }
 
-                                Toast.makeText(
-                                    context,
-                                    "Marker clicked: $geoPoint",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-
-                                
                                 longPressMarker = Marker(mapView).apply {
                                     position = geoPoint as GeoPoint?
                                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
