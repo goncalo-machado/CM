@@ -18,7 +18,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,8 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.compose.rememberAsyncImagePainter
+import com.example.projectcm.SharedViewModel
 import com.example.projectcm.database.entities.TrashProblem
-import com.example.projectcm.database.entities.User
 import com.example.projectcm.database.repositories.TrashProblemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,18 +39,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
-class TrashProblemViewModel(private val repository: TrashProblemRepository) : ViewModel() {
-    private val _currentUser = MutableStateFlow<User?>(null) // Set from the shared view model
-    val currentUser: StateFlow<User?> = _currentUser
+class TrashProblemViewModel(
+    sharedViewModel: SharedViewModel,
+    private val repository: TrashProblemRepository
+) : ViewModel() {
 
     private val _sortByStatus = MutableStateFlow(true) // Default sorting is by status
     val sortByStatus: StateFlow<Boolean> = _sortByStatus
 
     private val _trashProblem = mutableStateOf<TrashProblem?>(null)
-    val trashProblem: State<TrashProblem?> = _trashProblem
 
     val trashProblems = combine(
-        repository.getAllTrashProblems(), _sortByStatus, _currentUser
+        repository.getAllTrashProblems(), _sortByStatus, sharedViewModel.currentUser
     ) { problems, sortByStatus, user ->
         val filteredProblems = if (user?.role == "User") {
             problems.filter { it.userId == user.id }
@@ -67,12 +66,12 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
         _sortByStatus.value = !_sortByStatus.value
     }
 
-    fun resolveProblem(problem: TrashProblem) {
+    fun resolveProblem(problem: TrashProblem, adminName: String) {
         viewModelScope.launch {
             try {
                 repository.updateTrashProblem(
                     problem.copy(
-                        status = "Resolved", resolvedAt = LocalDateTime.now()
+                        status = "Resolved", resolvedAt = LocalDateTime.now(), adminName = adminName
                     )
                 )
             } catch (e: Exception) {
@@ -106,8 +105,8 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
 }
 
 @Composable
-fun ProblemsPage(viewModel: TrashProblemViewModel) {
-    val currentUser by viewModel.currentUser.collectAsState()
+fun ProblemsPage(sharedViewModel: SharedViewModel, viewModel: TrashProblemViewModel) {
+    val currentUser by sharedViewModel.currentUser.collectAsState()
     val problems by viewModel.trashProblems.collectAsState(emptyList())
     val sortByStatus by viewModel.sortByStatus.collectAsState()
 
@@ -136,7 +135,7 @@ fun ProblemsPage(viewModel: TrashProblemViewModel) {
         LazyColumn {
             items(items = problems, key = { it.id }) { problem ->
                 ProblemCard(problem = problem, isAdmin = currentUser?.role == "Admin", onResolve = {
-                    viewModel.resolveProblem(problem)
+                    currentUser?.let { viewModel.resolveProblem(problem, it.username) }
                 })
             }
         }

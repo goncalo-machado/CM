@@ -86,7 +86,7 @@ fun AppNavHost(
 ) {
     val loginViewModel = remember { LoginViewModel(container.userRepository) }
     val registerViewModel = remember { RegisterViewModel(container.userRepository) }
-    val trashProblemViewModel = remember { TrashProblemViewModel(container.trashProblemRepository) }
+    val trashProblemViewModel = remember { TrashProblemViewModel(sharedViewModel, container.trashProblemRepository) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination?.route
@@ -100,7 +100,7 @@ fun AppNavHost(
 
     Scaffold(bottomBar = {
         if (showBottomNav) {
-            BottomNavigationBar(navController = navController, currentUser = currentUser)
+            BottomNavigationBar(navController = navController)
         }
     }) { innerPadding ->
         NavHost(
@@ -156,7 +156,7 @@ fun AppNavHost(
                 ImageViewerScreen(imageUri = imageUri, imageName = imageName)
             }
             composable("Problems") {
-                ProblemsPage(viewModel = trashProblemViewModel)
+                ProblemsPage(sharedViewModel, trashProblemViewModel)
             }
         }
     }
@@ -164,12 +164,8 @@ fun AppNavHost(
 
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController, currentUser: User?) {
-    val adminItems = listOf("Home", "PushNotification", "Problems")
-    val userItems = listOf("Home", "Map", "Camera","Problems")
-    val items = if (currentUser?.role == "Admin") adminItems else userItems
-
-    Log.d("BottomNavigationBar", "Recomposed with user: $currentUser")
+fun BottomNavigationBar(navController: NavHostController) {
+    val items = listOf("Home", "Map","Problems")
 
     NavigationBar {
         val currentRoute = navController.currentDestination?.route
@@ -177,7 +173,8 @@ fun BottomNavigationBar(navController: NavHostController, currentUser: User?) {
             NavigationBarItem(selected = currentRoute == screen,
                 onClick = { navController.navigate(screen) },
                 label = { Text(screen) },
-                icon = { /* Optional: Add icon here */ })
+                icon = {}
+            )
         }
     }
 }

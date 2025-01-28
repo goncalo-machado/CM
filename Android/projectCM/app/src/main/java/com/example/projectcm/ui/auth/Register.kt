@@ -183,7 +183,7 @@ fun RegisterScreen(
 
             // Register button
             Button(
-                onClick = { viewModel.register(username, password) },
+                onClick = { viewModel.register(username, password,selectedRole) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Register")

@@ -260,95 +260,6 @@ fun CameraContent(trashProblemViewModel: TrashProblemViewModel, navController: N
 }
 
 @Composable
-fun SavedImagesScreen(context: Context, navController: NavController, onOpenCamera: () -> Unit) {
-    val savedImages = remember { getSavedImages(context) }
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Title
-            Text(
-                text = "Gallery",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 16.dp)
-
-            )
-
-            // Display the saved images in a LazyColumn
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(savedImages.size) { index ->
-                    val (imageUri, imageName) = savedImages[index]
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUri),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(150.dp)
-                                .clickable {
-                                    // Navigate to the detailed image screen
-                                    navController.navigate("image_viewer/${Uri.encode(imageUri.toString())}/${imageName}")
-                                }
-                        )
-                    }
-                }
-            }
-        }
-
-        // "Open Camera" button fixed at the bottom
-        Button(
-            onClick = onOpenCamera,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-        ) {
-            Text("Open Camera")
-        }
-    }
-}
-
-fun getSavedImages(context: Context): List<Pair<Uri, String>> {
-    val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-    val projection = arrayOf(
-        MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME
-    )
-
-    val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
-    val selectionArgs = arrayOf("Pictures/CMProject/%") // Filter by app-specific folder
-
-    val images = mutableListOf<Pair<Uri, String>>()
-    val cursor = context.contentResolver.query(uri, projection, selection, selectionArgs, null)
-
-    cursor?.use {
-        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-        val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-
-        while (cursor.moveToNext()) {
-            val id = cursor.getLong(idColumn)
-            val displayName = cursor.getString(nameColumn) // Fetch the file name
-            val contentUri =
-                ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-            images.add(Pair(contentUri, displayName)) // Add both URI and name
-        }
-    }
-
-    return images
-}
-
-@Composable
 fun CameraPreview(
     cameraProvider: ProcessCameraProvider?,
     previewView: PreviewView,
@@ -459,8 +370,6 @@ fun saveImageToGallery(imageUri: Uri, imageName: String, context: Context) {
 
 @Composable
 fun ImageViewerScreen(imageUri: String?, imageName: String?) {
-    val context = LocalContext.current
-
     // Decode the image URI properly
     val decodedUriString = Uri.decode(imageUri ?: "")
     val uri = Uri.parse(decodedUriString)

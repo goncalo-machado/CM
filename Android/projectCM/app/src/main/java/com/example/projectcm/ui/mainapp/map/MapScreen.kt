@@ -129,7 +129,7 @@ fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProb
                                     val trashProblem = TrashProblem(
                                         latitude = position.latitude,
                                         longitude = position.longitude,
-                                        status = "reported",
+                                        status = "Reported",
                                         userId = sharedViewModel.currentUser.value?.id ?: 0,
                                         imagePath = ""
                                     )
