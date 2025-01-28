@@ -4,8 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,9 +43,10 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 @Composable
-fun MapScreen(fusedLocationClient : FusedLocationProviderClient) {
+fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
     val context = LocalContext.current
     val defaultLocation = GeoPoint(37.7749, -122.4194)
     var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
@@ -91,7 +90,26 @@ fun MapScreen(fusedLocationClient : FusedLocationProviderClient) {
             }
         }, modifier = Modifier.fillMaxSize(), update = { mapView ->
             mapView.controller.setCenter(userLocation ?: defaultLocation)
+
+            if (userLocation != null) {
+                val userMarker = Marker(mapView)
+                userMarker.position = userLocation
+                userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                userMarker.title = "You are here"
+                mapView.overlays.clear() // Clear old markers if needed
+                mapView.overlays.add(userMarker)
+                mapView.invalidate() // Refresh the map
+            }else{
+                val userMarker = Marker(mapView)
+                userMarker.position = defaultLocation
+                userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                userMarker.title = "You are here"
+                mapView.overlays.clear() // Clear old markers if needed
+                mapView.overlays.add(userMarker)
+                mapView.invalidate() // Refresh the map
+            }
         })
+
 
         // Coordinates display in bottom-right corner
         Box(
@@ -190,8 +208,7 @@ private fun getCurrentLocation(
     onLocationReceived: (Location?) -> Unit
 ) {
     if (ActivityCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
+            context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     ) {
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
