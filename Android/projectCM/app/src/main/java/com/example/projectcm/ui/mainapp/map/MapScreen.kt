@@ -81,6 +81,8 @@ fun MapScreen() {
                 setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+                minZoomLevel = 5.0
+                maxZoomLevel = 20.0
                 controller.setZoom(15.0)
                 controller.setCenter(userLocation ?: defaultLocation)
                 mapViewRef.value = this

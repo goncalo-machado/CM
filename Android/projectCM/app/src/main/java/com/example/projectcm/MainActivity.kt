@@ -143,8 +143,8 @@ fun AppNavHost(
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController, currentUser: User?) {
-    val adminItems = listOf("Home", "Map", "Camera")
-    val userItems = listOf("Home", "PushNotification", "Camera")
+    val adminItems = listOf("Home", "PushNotification", "Status")
+    val userItems = listOf("Home", "Map", "Camera")
     val items = if (currentUser?.role == "Admin") adminItems else userItems
 
     Log.d("BottomNavigationBar", "Recomposed with user: $currentUser")
