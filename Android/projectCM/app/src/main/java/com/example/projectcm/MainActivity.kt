@@ -136,7 +136,7 @@ fun AppNavHost(
                 }, onLoginClick = { navController.navigate("Login") })
             }
             composable("home") {
-                HomeScreen(navController = navController, sharedViewModel = sharedViewModel, onLogoutClick = {
+                HomeScreen(sharedViewModel = sharedViewModel, onLogoutClick = {
                     sharedViewModel.clearCurrentUser()
                     loginViewModel.logout()
                     registerViewModel.logout()
