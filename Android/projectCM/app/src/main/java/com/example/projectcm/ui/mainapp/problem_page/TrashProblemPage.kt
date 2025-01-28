@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,8 @@ fun ProblemsPage(viewModel: TrashProblemViewModel) {
     val problems by viewModel.trashProblems.collectAsState(emptyList())
     val sortByStatus by viewModel.sortByStatus.collectAsState()
 
-    Column(modifier = Modifier
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
         .fillMaxSize()
         .padding(16.dp)) {
         // Page Title

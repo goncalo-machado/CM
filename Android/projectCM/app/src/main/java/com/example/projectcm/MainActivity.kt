@@ -135,7 +135,14 @@ fun AppNavHost(
                 }, onLoginClick = { navController.navigate("Login") })
             }
             composable("home") {
-                HomeScreen(navController = navController, sharedViewModel = sharedViewModel)
+                HomeScreen(navController = navController, sharedViewModel = sharedViewModel, onLogoutClick = {
+                    sharedViewModel.clearCurrentUser()
+                    loginViewModel.logout()
+                    registerViewModel.logout()
+                    navController.navigate("Login") {
+                        popUpTo("Home") { inclusive = true }
+                    }
+                })
             }
             composable("Map") { MapScreen(fusedLocationProviderClient) }
             composable("Camera") { CameraScreen(navController) }

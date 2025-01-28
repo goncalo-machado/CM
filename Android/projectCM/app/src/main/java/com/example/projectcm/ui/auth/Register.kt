@@ -61,6 +61,10 @@ class RegisterViewModel(private val userRepository: UserRepository) : ViewModel(
             }
         }
     }
+
+    fun logout() {
+        _registerResult.value = Result.Start
+    }
 }
 
 @Composable

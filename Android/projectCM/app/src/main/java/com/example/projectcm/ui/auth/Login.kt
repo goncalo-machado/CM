@@ -55,6 +55,10 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
             }
         }
     }
+
+    fun logout() {
+        _loginResult.value = Result.Start
+    }
 }
 
 @Composable
@@ -126,9 +130,7 @@ fun LoginScreen(
             // Show error message if any
             when (val result = loginResult) {
                 is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally)) // Center the loader
-                is Result.Success -> result.data?.let { user ->
-                    onLoginSuccess(user)
-                }
+                is Result.Success -> null
                 is Result.Error -> Text(result.message, color = MaterialTheme.colorScheme.error)
                 Result.Start -> null
             }
