@@ -51,11 +51,115 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
 import java.io.File
 
 
+//@Composable
+//fun CameraScreen(navController: NavController) {
+//    val context = LocalContext.current
+//    var hasCameraPermission by remember { mutableStateOf(false) }
+//    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.RequestPermission()
+//    ) { granted ->
+//        hasCameraPermission = granted
+//        if (!granted) {
+//            Toast.makeText(context, "Camera permission is required", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    LaunchedEffect(Unit) {
+//        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+//    }
+//
+//    if (hasCameraPermission) {
+//        CameraContent(navController)
+//    } else {
+//        Box(
+//            contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()
+//        ) {
+//            Text(text = "Camera permission is required to use this feature.")
+//        }
+//    }
+//}
+//
+//@Composable
+//fun CameraContent(navController: NavController) {
+//    val context = LocalContext.current
+//    val lifecycleOwner = LocalLifecycleOwner.current
+//    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+//    val previewView = remember { PreviewView(context) }
+//    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+//    var imageUri by remember { mutableStateOf<Uri?>(null) }
+//    var showCamera by remember { mutableStateOf(false) }
+//    var imageName by remember { mutableStateOf("") }
+//
+//    // Initialize the camera provider and clean up on disposal
+//    DisposableEffect(Unit) {
+//        val listener = {
+//            cameraProvider = cameraProviderFuture.get()
+//        }
+//        cameraProviderFuture.addListener(listener, ContextCompat.getMainExecutor(context))
+//
+//        onDispose {
+//            cameraProvider?.unbindAll()
+//        }
+//    }
+//
+//    if (imageUri != null) {
+//        // Display the captured image
+//        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+//            Column(
+//                horizontalAlignment = Alignment.CenterHorizontally,
+//                verticalArrangement = Arrangement.Center,
+//                modifier = Modifier.padding(16.dp)
+//
+//            ) {
+//                imageUri?.let {
+//                    Image(
+//                        painter = rememberAsyncImagePainter(it),
+//                        contentDescription = "Captured Image",
+//                        modifier = Modifier
+//                            .size(200.dp)
+//                            .padding(bottom = 16.dp)
+//                    )
+//                }
+//
+//                Text(text = "Photo Captured!", style = MaterialTheme.typography.bodySmall)
+//                Spacer(modifier = Modifier.height(16.dp))
+//                TextField(
+//                    value = imageName, // Bind the value to the state
+//                    onValueChange = { imageName = it }, // Update the state on user input
+//                    label = { Text("Enter a name") },
+//                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//                Button(onClick = {
+//                    imageUri?.let {
+//                        saveImageToGallery(it, imageName, context)
+//                    }
+//                    imageUri = null // Clear the captured image
+//                    imageName = ""  // Clear the name text field
+//                    showCamera = false // Optionally hide the camera preview
+//                }) {
+//                    Text("Save Photo")
+//                }
+//            }
+//        }
+//    } else if (showCamera) {
+//        CameraPreview(cameraProvider = cameraProvider,
+//            previewView = previewView,
+//            lifecycleOwner = lifecycleOwner,
+//            onImageCaptured = { uri -> imageUri = uri })
+//    } else {
+//        SavedImagesScreen(
+//            context = LocalContext.current,
+//            navController = navController,
+//            onOpenCamera = { showCamera = true })
+//    }
+//}
+
 @Composable
-fun CameraScreen(navController: NavController) {
+fun CameraScreen(trashProblemViewModel: TrashProblemViewModel, navController: NavController) {
     val context = LocalContext.current
     var hasCameraPermission by remember { mutableStateOf(false) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -72,7 +176,7 @@ fun CameraScreen(navController: NavController) {
     }
 
     if (hasCameraPermission) {
-        CameraContent(navController)
+        CameraContent(trashProblemViewModel, navController)
     } else {
         Box(
             contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()
@@ -83,7 +187,7 @@ fun CameraScreen(navController: NavController) {
 }
 
 @Composable
-fun CameraContent(navController: NavController) {
+fun CameraContent(trashProblemViewModel: TrashProblemViewModel, navController: NavController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
@@ -135,25 +239,23 @@ fun CameraContent(navController: NavController) {
                 Button(onClick = {
                     imageUri?.let {
                         saveImageToGallery(it, imageName, context)
+                        trashProblemViewModel.setPhotoUri(imageUri!!)
+                        trashProblemViewModel.saveTrashProblem()
                     }
                     imageUri = null // Clear the captured image
                     imageName = ""  // Clear the name text field
                     showCamera = false // Optionally hide the camera preview
+                    navController.popBackStack()
                 }) {
                     Text("Save Photo")
                 }
             }
         }
-    } else if (showCamera) {
+    } else {
         CameraPreview(cameraProvider = cameraProvider,
             previewView = previewView,
             lifecycleOwner = lifecycleOwner,
             onImageCaptured = { uri -> imageUri = uri })
-    } else {
-        SavedImagesScreen(
-            context = LocalContext.current,
-            navController = navController,
-            onOpenCamera = { showCamera = true })
     }
 }
 

@@ -86,7 +86,7 @@ fun AppNavHost(
 ) {
     val loginViewModel = remember { LoginViewModel(container.userRepository) }
     val registerViewModel = remember { RegisterViewModel(container.userRepository) }
-    val problemsViewModel = remember { TrashProblemViewModel(container.trashProblemRepository) }
+    val trashProblemViewModel = remember { TrashProblemViewModel(container.trashProblemRepository) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination?.route
@@ -144,8 +144,9 @@ fun AppNavHost(
                     }
                 })
             }
-            composable("Map") { MapScreen(fusedLocationProviderClient) }
-            composable("Camera") { CameraScreen(navController) }
+            composable("Map") { MapScreen(sharedViewModel, trashProblemViewModel, navController, fusedLocationProviderClient) }
+
+            composable("Camera") { CameraScreen(trashProblemViewModel, navController) }
             composable("PushNotification") { PushNotificationScreen() }
             composable("image_viewer/{imageUri}/{imageName}",
                 arguments = listOf(navArgument("imageUri") { type = NavType.StringType },
@@ -155,7 +156,7 @@ fun AppNavHost(
                 ImageViewerScreen(imageUri = imageUri, imageName = imageName)
             }
             composable("Problems") {
-                ProblemsPage(viewModel = problemsViewModel)
+                ProblemsPage(viewModel = trashProblemViewModel)
             }
         }
     }

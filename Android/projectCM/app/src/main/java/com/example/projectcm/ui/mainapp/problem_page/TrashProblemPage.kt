@@ -1,5 +1,6 @@
 package com.example.projectcm.ui.mainapp.problem_page
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,10 +47,11 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
     private val _sortByStatus = MutableStateFlow(true) // Default sorting is by status
     val sortByStatus: StateFlow<Boolean> = _sortByStatus
 
+    private val _trashProblem = mutableStateOf<TrashProblem?>(null)
+    val trashProblem: State<TrashProblem?> = _trashProblem
+
     val trashProblems = combine(
-        repository.getAllTrashProblems(),
-        _sortByStatus,
-        _currentUser
+        repository.getAllTrashProblems(), _sortByStatus, _currentUser
     ) { problems, sortByStatus, user ->
         val filteredProblems = if (user?.role == "User") {
             problems.filter { it.userId == user.id }
@@ -55,7 +59,8 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
             problems // Admin sees all problems
         }
         filteredProblems.sortedWith(compareBy({ if (sortByStatus) it.status else null },
-            { it.reportedAt }))
+            { it.reportedAt })
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun toggleSortByStatus() {
@@ -67,8 +72,7 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
             try {
                 repository.updateTrashProblem(
                     problem.copy(
-                        status = "Resolved",
-                        resolvedAt = LocalDateTime.now()
+                        status = "Resolved", resolvedAt = LocalDateTime.now()
                     )
                 )
             } catch (e: Exception) {
@@ -78,6 +82,27 @@ class TrashProblemViewModel(private val repository: TrashProblemRepository) : Vi
 
     }
 
+    fun setTrashProblem(trashProblem: TrashProblem) {
+        _trashProblem.value = trashProblem
+    }
+
+
+    fun setPhotoUri(photoUri: Uri) {
+        _trashProblem.value = _trashProblem.value?.copy(imagePath = photoUri.toString())
+    }
+
+    fun saveTrashProblem() {
+        _trashProblem.value?.let {
+            viewModelScope.launch {
+                try {
+                    repository.addTrashProblem(it)
+                } catch (e: Exception) {
+                    Log.e("TrashProblemViewModel", "Error saving problem", e)
+                }
+            }
+        }
+
+    }
 }
 
 @Composable
@@ -86,10 +111,12 @@ fun ProblemsPage(viewModel: TrashProblemViewModel) {
     val problems by viewModel.trashProblems.collectAsState(emptyList())
     val sortByStatus by viewModel.sortByStatus.collectAsState()
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         // Page Title
         Text(
             text = if (currentUser?.role == "User") "My Problems" else "All Problems",
@@ -134,7 +161,9 @@ fun ProblemCard(problem: TrashProblem, isAdmin: Boolean, onResolve: () -> Unit) 
                 style = MaterialTheme.typography.bodyMedium
             )
             Text("Status: ${problem.status}", style = MaterialTheme.typography.bodyMedium)
-            Text("Reported At: ${problem.reportedAt}", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "Reported At: ${problem.reportedAt}", style = MaterialTheme.typography.bodyMedium
+            )
             problem.resolvedAt?.let {
                 Text("Resolved At: $it", style = MaterialTheme.typography.bodyMedium)
             }
@@ -143,8 +172,7 @@ fun ProblemCard(problem: TrashProblem, isAdmin: Boolean, onResolve: () -> Unit) 
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                "Admin: ${problem.adminName ?: "None"}",
-                style = MaterialTheme.typography.bodyMedium
+                "Admin: ${problem.adminName ?: "None"}", style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(modifier = Modifier.height(8.dp))

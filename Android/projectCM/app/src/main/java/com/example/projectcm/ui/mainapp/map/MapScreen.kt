@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,19 +41,37 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import com.example.projectcm.R
+import com.example.projectcm.SharedViewModel
+import com.example.projectcm.database.entities.TrashProblem
+import com.example.projectcm.database.entities.User
+import com.example.projectcm.database.repositories.TrashProblemRepository
+import com.example.projectcm.database.repositories.UserRepository
+import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
+import com.example.projectcm.utils.Result
 import com.google.android.gms.location.FusedLocationProviderClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Overlay
+
 
 @Composable
-fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
+fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProblemViewModel, navcontroller: NavController, fusedLocationClient: FusedLocationProviderClient) {
     val context = LocalContext.current
     val defaultLocation = GeoPoint(37.7749, -122.4194)
     var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
+    var longPressMarker by remember { mutableStateOf<Marker?>(null) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -66,7 +86,6 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
                     Log.d("MapScreen", "No location available from FusedLocationProviderClient")
                 }
             }
-
         } else {
             Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
@@ -87,29 +106,62 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
                 controller.setZoom(15.0)
                 controller.setCenter(userLocation ?: defaultLocation)
                 mapViewRef.value = this
+
+                // Add long press listener
+                overlays.add(object : Overlay() {
+                    override fun onLongPress(e: MotionEvent, mapView: MapView?): Boolean {
+                        val geoPoint = mapView?.projection?.fromPixels(e.x.toInt(), e.y.toInt())
+                        geoPoint?.let {
+
+                            longPressMarker?.let { marker ->
+                                mapView.overlays?.remove(marker)
+                            }
+
+                            Toast.makeText(context, "Marker clicked: $geoPoint", Toast.LENGTH_SHORT).show()
+
+                            // Create a long press marker
+                            longPressMarker = Marker(mapView).apply {
+                                position = geoPoint as GeoPoint?
+                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                title = "New Marker"
+                                snippet = "Tap to take a photo and save"
+                                setOnMarkerClickListener { _, _ ->
+                                    val trashProblem = TrashProblem(
+                                        latitude = position.latitude,
+                                        longitude = position.longitude,
+                                        status = "reported",
+                                        userId = sharedViewModel.currentUser.value?.id ?: 0,
+                                        imagePath = ""
+                                    )
+
+                                    trashProblemViewModel.setTrashProblem(trashProblem)
+
+                                    navcontroller.navigate("camera")
+                                    true
+                                }
+                            }
+                            mapView.overlays?.add(longPressMarker)
+                            mapView.invalidate()
+                        }
+                        return true
+                    }
+                })
             }
         }, modifier = Modifier.fillMaxSize(), update = { mapView ->
             mapView.controller.setCenter(userLocation ?: defaultLocation)
 
-            if (userLocation != null) {
-                val userMarker = Marker(mapView)
-                userMarker.position = userLocation
-                userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                userMarker.title = "You are here"
-                mapView.overlays.clear() // Clear old markers if needed
+            // User Location Marker
+            userLocation?.let { location ->
+                val userMarker = Marker(mapView).apply {
+                    position = location
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    title = "You are here"
+                }
+                mapView.overlays.removeIf { it is Marker && (it as Marker).title == "You are here" }
                 mapView.overlays.add(userMarker)
-                mapView.invalidate() // Refresh the map
-            }else{
-                val userMarker = Marker(mapView)
-                userMarker.position = defaultLocation
-                userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                userMarker.title = "You are here"
-                mapView.overlays.clear() // Clear old markers if needed
-                mapView.overlays.add(userMarker)
-                mapView.invalidate() // Refresh the map
+                mapView.invalidate()
             }
         })
-
 
         // Coordinates display in bottom-right corner
         Box(
@@ -121,15 +173,10 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
                 .padding(8.dp)
         ) {
             Text(
-                text = if (userLocation != null) {
-                    "Latitude: %.6f\nLongitude: %.6f".format(
-                        userLocation!!.latitude, userLocation!!.longitude
-                    )
-                } else {
-                    "Latitude: %.6f\nLongitude: %.6f".format(
-                        defaultLocation.latitude, defaultLocation.longitude
-                    )
-                }, style = MaterialTheme.typography.bodySmall.copy(color = Color.Black)
+                text = userLocation?.let {
+                    "Latitude: %.6f\nLongitude: %.6f".format(it.latitude, it.longitude)
+                } ?: "Latitude: %.6f\nLongitude: %.6f".format(defaultLocation.latitude, defaultLocation.longitude),
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.Black)
             )
         }
 
@@ -145,7 +192,6 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
                 userLocation?.let { location ->
                     mapViewRef.value?.controller?.animateTo(location)
                 } ?: Toast.makeText(context, "Location not available", Toast.LENGTH_SHORT).show()
-
             }) {
                 Text(text = "Center on Me")
             }
@@ -159,15 +205,12 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
             // Zoom In Button with Background
             Box(
                 modifier = Modifier
-                    .background(
-                        Color.White, shape = CircleShape
-                    ) // Background for the button
-                    .padding(8.dp) // Padding inside the button
+                    .background(Color.White, shape = CircleShape)
+                    .padding(8.dp)
             ) {
                 IconButton(
-                    onClick = {
-                        mapViewRef.value?.controller?.zoomIn()
-                    }, modifier = Modifier.size(35.dp) // Button size
+                    onClick = { mapViewRef.value?.controller?.zoomIn() },
+                    modifier = Modifier.size(35.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ZoomIn,
@@ -181,15 +224,12 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
             // Zoom Out Button with Background
             Box(
                 modifier = Modifier
-                    .background(
-                        Color.White, shape = CircleShape
-                    ) // Background for the button
-                    .padding(8.dp) // Padding inside the button
+                    .background(Color.White, shape = CircleShape)
+                    .padding(8.dp)
             ) {
                 IconButton(
-                    onClick = {
-                        mapViewRef.value?.controller?.zoomOut()
-                    }, modifier = Modifier.size(35.dp) // Button size
+                    onClick = { mapViewRef.value?.controller?.zoomOut() },
+                    modifier = Modifier.size(35.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ZoomOut,
@@ -201,6 +241,7 @@ fun MapScreen(fusedLocationClient: FusedLocationProviderClient) {
         }
     }
 }
+
 
 private fun getCurrentLocation(
     context: Context,
