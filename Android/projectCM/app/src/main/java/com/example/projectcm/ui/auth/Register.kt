@@ -92,26 +92,26 @@ fun RegisterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp) // Padding for content to not touch the edges
+            .padding(16.dp) 
     ) {
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally, // Center the contents horizontally
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Space between the items
+            horizontalAlignment = Alignment.CenterHorizontally, 
+            verticalArrangement = Arrangement.spacedBy(16.dp) 
         ) {
-            // Title
+            
             Text(
                 text = "Register",
                 fontSize = 24.sp,
-                modifier = Modifier.padding(bottom = 32.dp) // Padding between title and form
+                modifier = Modifier.padding(bottom = 32.dp) 
             )
 
-            // Spacer between title and username field
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Username field
+            
             TextField(
                 value = username,
                 onValueChange = { username = it },
@@ -119,10 +119,10 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Spacer between username and password field
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password field
+            
             TextField(
                 value = password,
                 onValueChange = { password = it },
@@ -146,7 +146,7 @@ fun RegisterScreen(
                             contentDescription = null
                         )
                     },
-                    enabled = false // Prevent manual input
+                    enabled = false 
                 )
                 DropdownMenu(
                     expanded = expanded,
@@ -167,32 +167,32 @@ fun RegisterScreen(
             }
 
 
-            // Spacer between password field and error message
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show error message if any
+            
             when (val result = registerResult) {
-                is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally)) // Center the loader
+                is Result.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally)) 
                 is Result.Success -> null
                 is Result.Error -> Text(result.message, color = MaterialTheme.colorScheme.error)
                 Result.Start -> null
             }
 
-            // Spacer between error message and register button
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Register button
+            
             Button(
-                onClick = { viewModel.register(username, password,selectedRole) },
+                onClick = { viewModel.register(username, password, selectedRole) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Register")
             }
 
-            // Spacer between register button and login button
+            
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Login button to navigate to the login screen
+            
             Button(
                 onClick = { onLoginClick() }, modifier = Modifier.fillMaxWidth()
             ) {

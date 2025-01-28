@@ -8,11 +8,11 @@ import java.time.LocalDateTime
 data class TrashProblem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int,
-    val imagePath: String, // Store the image path
-    val status: String, // "Reported" or "Resolved"
-    val adminName: String? = null, // Nullable, as it may not be set initially
+    val imagePath: String, 
+    val status: String, 
+    val adminName: String? = null, 
     val reportedAt: LocalDateTime = LocalDateTime.now(),
-    val resolvedAt: LocalDateTime? = null, // Nullable, as it will be set only when resolved
-    val latitude: Double, // Latitude of the problem location
-    val longitude: Double // Longitude of the problem location
+    val resolvedAt: LocalDateTime? = null, 
+    val latitude: Double, 
+    val longitude: Double 
 )

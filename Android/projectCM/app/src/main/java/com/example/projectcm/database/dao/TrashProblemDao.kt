@@ -1,7 +1,6 @@
 package com.example.projectcm.database.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -16,15 +15,6 @@ interface TrashProblemDao {
 
     @Update
     suspend fun updateTrashProblem(problem: TrashProblem)
-
-    @Delete
-    suspend fun deleteTrashProblem(problem: TrashProblem)
-
-    @Query("SELECT * FROM TrashProblems WHERE id = :id")
-    suspend fun getTrashProblemById(id: Int): TrashProblem?
-
-    @Query("SELECT * FROM TrashProblems WHERE status = :status")
-    fun getTrashProblemsByStatus(status: String): Flow<List<TrashProblem>>
 
     @Query("SELECT * FROM TrashProblems")
     fun getAllTrashProblems(): Flow<List<TrashProblem>>

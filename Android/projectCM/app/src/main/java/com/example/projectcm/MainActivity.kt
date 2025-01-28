@@ -29,15 +29,12 @@ import com.example.projectcm.ui.auth.LoginViewModel
 import com.example.projectcm.ui.auth.RegisterScreen
 import com.example.projectcm.ui.auth.RegisterViewModel
 import com.example.projectcm.ui.mainapp.HomeScreen
-import com.example.projectcm.ui.mainapp.PushNotificationScreen
 import com.example.projectcm.ui.mainapp.camera.CameraScreen
-import com.example.projectcm.ui.mainapp.camera.ImageViewerScreen
 import com.example.projectcm.ui.mainapp.map.MapScreen
 import com.example.projectcm.ui.mainapp.problem_page.ProblemDetailsScreen
 import com.example.projectcm.ui.mainapp.problem_page.ProblemsPage
 import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.example.projectcm.ui.theme.ProjectCMTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.osmdroid.config.Configuration
@@ -55,11 +52,13 @@ class MainActivity : ComponentActivity() {
         Configuration.getInstance().userAgentValue = "CMProject_98359"
 
         setContent {
-            AppNavHost(
-                navController = rememberNavController(),
-                container = appContainer,
-                sharedViewModel = sharedViewModel
-            )
+            ProjectCMTheme {
+                AppNavHost(
+                    navController = rememberNavController(),
+                    container = appContainer,
+                    sharedViewModel = sharedViewModel
+                )
+            }
         }
     }
 }
@@ -87,7 +86,8 @@ fun AppNavHost(
 ) {
     val loginViewModel = remember { LoginViewModel(container.userRepository) }
     val registerViewModel = remember { RegisterViewModel(container.userRepository) }
-    val trashProblemViewModel = remember { TrashProblemViewModel(sharedViewModel, container.trashProblemRepository) }
+    val trashProblemViewModel =
+        remember { TrashProblemViewModel(sharedViewModel, container.trashProblemRepository) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination?.route
@@ -95,7 +95,7 @@ fun AppNavHost(
     val showBottomNav = currentDestination !in listOf("Login", "Register")
     val currentUser by sharedViewModel.currentUser.collectAsState()
 
-    val fusedLocationProviderClient = remember {container.fusedLocationClient}
+    val fusedLocationProviderClient = remember { container.fusedLocationClient }
 
     Log.d("AppNavHost", "Recomposed with user: $currentUser")
 
@@ -145,26 +145,31 @@ fun AppNavHost(
                     }
                 })
             }
-            composable("Map") { MapScreen(sharedViewModel, trashProblemViewModel, navController, fusedLocationProviderClient) }
+            composable("Map") {
+                MapScreen(
+                    sharedViewModel,
+                    trashProblemViewModel,
+                    navController,
+                    fusedLocationProviderClient
+                )
+            }
 
             composable("Camera") { CameraScreen(trashProblemViewModel, navController) }
-            composable("PushNotification") { PushNotificationScreen() }
-            composable("image_viewer/{imageUri}/{imageName}",
-                arguments = listOf(navArgument("imageUri") { type = NavType.StringType },
-                    navArgument("imageName") { type = NavType.StringType })) { backStackEntry ->
-                val imageUri = backStackEntry.arguments?.getString("imageUri")
-                val imageName = backStackEntry.arguments?.getString("imageName")
-                ImageViewerScreen(imageUri = imageUri, imageName = imageName)
-            }
             composable("Problems") {
                 ProblemsPage(sharedViewModel, trashProblemViewModel, navController)
             }
             composable(
-                "problem_details/{problemId}",
+                "Problem_Details/{problemId}",
                 arguments = listOf(navArgument("problemId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val problemId = backStackEntry.arguments?.getString("problemId")?.toInt() ?: return@composable
-                ProblemDetailsScreen(problemId, sharedViewModel, trashProblemViewModel,navController)
+                val problemId =
+                    backStackEntry.arguments?.getString("problemId")?.toInt() ?: return@composable
+                ProblemDetailsScreen(
+                    problemId,
+                    sharedViewModel,
+                    trashProblemViewModel,
+                    navController
+                )
             }
         }
     }
@@ -173,7 +178,7 @@ fun AppNavHost(
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
-    val items = listOf("Home", "Map","Problems")
+    val items = listOf("Home", "Map", "Problems")
 
     NavigationBar {
         val currentRoute = navController.currentDestination?.route

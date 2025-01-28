@@ -49,7 +49,7 @@ class TrashProblemViewModel(
     sharedViewModel: SharedViewModel, private val repository: TrashProblemRepository
 ) : ViewModel() {
 
-    private val _sortByStatus = MutableStateFlow(true) // Default sorting is by status
+    private val _sortByStatus = MutableStateFlow(true) 
     val sortByStatus: StateFlow<Boolean> = _sortByStatus
 
     private val _trashProblem = mutableStateOf<TrashProblem?>(null)
@@ -60,10 +60,11 @@ class TrashProblemViewModel(
         val filteredProblems = if (user?.role == "User") {
             problems.filter { it.userId == user.id }
         } else {
-            problems // Admin sees all problems
+            problems 
         }
-        filteredProblems.sortedWith(compareBy({ if (sortByStatus) it.status else null },
-            { it.reportedAt })
+        filteredProblems.sortedWith(
+            compareBy({ if (sortByStatus) it.status else null },
+                { it.reportedAt })
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -129,14 +130,14 @@ fun ProblemsPage(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Page Title
+        
         Text(
             text = if (currentUser?.role == "User") "My Problems" else "All Problems",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Sorting Button
+        
         Button(
             onClick = { viewModel.toggleSortByStatus() },
             modifier = Modifier.padding(bottom = 16.dp)
@@ -144,11 +145,11 @@ fun ProblemsPage(
             Text(text = if (sortByStatus) "Sort by Date" else "Sort by Status")
         }
 
-        // Problems List
+        
         LazyColumn {
             items(items = problems, key = { it.id }) { problem ->
                 ProblemListItem(problem = problem) {
-                    navController.navigate("problem_details/${problem.id}")
+                    navController.navigate("Problem_Details/${problem.id}")
                 }
             }
         }
@@ -169,7 +170,7 @@ fun ProblemListItem(problem: TrashProblem, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(16.dp)
         ) {
-            // Display Problem ID and Status without unnecessary weight modifier
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Problem ID: ${problem.id}",
@@ -181,7 +182,7 @@ fun ProblemListItem(problem: TrashProblem, onClick: () -> Unit) {
                 )
             }
 
-            // Display Image if available
+            
             if (problem.imagePath.isNotEmpty()) {
                 Image(
                     painter = rememberAsyncImagePainter(model = problem.imagePath),
@@ -197,10 +198,13 @@ fun ProblemListItem(problem: TrashProblem, onClick: () -> Unit) {
 
 @Composable
 fun ProblemDetailsScreen(
-    problemId: Int, sharedViewModel: SharedViewModel, viewModel: TrashProblemViewModel, navController: NavController
+    problemId: Int,
+    sharedViewModel: SharedViewModel,
+    viewModel: TrashProblemViewModel,
+    navController: NavController
 ) {
     val currentUser by sharedViewModel.currentUser.collectAsState()
-    val problem = viewModel.getProblemById(problemId) // Function to fetch the problem by ID
+    val problem = viewModel.getProblemById(problemId) 
 
     problem?.let {
         Box(
@@ -213,7 +217,7 @@ fun ProblemDetailsScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text("Id: ${problem.id}")
-                // Display Details
+                
                 if (currentUser?.role == "Admin") {
                     Text("Reported by User ID: ${problem.userId}")
                 }
@@ -240,7 +244,7 @@ fun ProblemDetailsScreen(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Display Image
+                
                 if (problem.imagePath.isNotEmpty()) {
                     Image(
                         painter = rememberAsyncImagePainter(model = problem.imagePath),

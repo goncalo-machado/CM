@@ -107,7 +107,7 @@ fun MapScreen(
 
 
                 if (currentUser?.role == "User") {
-                    // Add long press listener
+                    
                     overlays.add(object : Overlay() {
                         override fun onLongPress(e: MotionEvent, mapView: MapView?): Boolean {
                             val geoPoint = mapView?.projection?.fromPixels(e.x.toInt(), e.y.toInt())
@@ -123,7 +123,7 @@ fun MapScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
 
-                                // Create a long press marker
+                                
                                 longPressMarker = Marker(mapView).apply {
                                     position = geoPoint as GeoPoint?
                                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
@@ -140,7 +140,7 @@ fun MapScreen(
 
                                         trashProblemViewModel.setTrashProblem(trashProblem)
 
-                                        navController.navigate("camera")
+                                        navController.navigate("Camera")
                                         true
                                     }
                                 }
@@ -155,7 +155,7 @@ fun MapScreen(
         }, modifier = Modifier.fillMaxSize(), update = { mapView ->
             mapView.controller.setCenter(userLocation ?: defaultLocation)
 
-            // User Location Marker
+            
             userLocation?.let { location ->
                 val userMarker = Marker(mapView).apply {
                     position = location
@@ -174,16 +174,20 @@ fun MapScreen(
                     position = GeoPoint(problem.latitude, problem.longitude)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     title = "Trash Problem #${problem.id}"
-                    snippet = if (problem.status == "Resolved") "Resolved Problem" else "Reported Problem"
-                    icon = if (problem.status == "Resolved") ContextCompat.getDrawable(mapView.context, R.drawable.resolved_marker)
+                    snippet =
+                        if (problem.status == "Resolved") "Resolved Problem" else "Reported Problem"
+                    icon = if (problem.status == "Resolved") ContextCompat.getDrawable(
+                        mapView.context,
+                        R.drawable.resolved_marker
+                    )
                     else ContextCompat.getDrawable(mapView.context, R.drawable.reported_marker)
 
-                    // OnClick listener for the marker
+                    
                     setOnMarkerClickListener { _, _ ->
-                        // Navigate to the ProblemDetailsScreen with the problem id
+                        
                         val problemId = problem.id.toString()
-                        navController.navigate("problem_details/$problemId")
-                        true // return true to indicate that the click event was handled
+                        navController.navigate("Problem_Details/$problemId")
+                        true 
                     }
                 }
 
@@ -191,7 +195,7 @@ fun MapScreen(
             }
         })
 
-        // Coordinates display in bottom-right corner
+        
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -208,7 +212,7 @@ fun MapScreen(
             ), style = MaterialTheme.typography.bodySmall.copy(color = Color.Black))
         }
 
-        // Button to center the map in bottom-left corner
+        
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -230,7 +234,7 @@ fun MapScreen(
                 .align(Alignment.TopEnd)
                 .padding(16.dp)
         ) {
-            // Zoom In Button with Background
+            
             Box(
                 modifier = Modifier
                     .background(Color.White, shape = CircleShape)
@@ -249,7 +253,7 @@ fun MapScreen(
             }
             Spacer(Modifier.size(8.dp))
 
-            // Zoom Out Button with Background
+            
             Box(
                 modifier = Modifier
                     .background(Color.White, shape = CircleShape)
