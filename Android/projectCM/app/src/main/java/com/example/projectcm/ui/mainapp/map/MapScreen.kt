@@ -29,8 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,21 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.projectcm.R
 import com.example.projectcm.SharedViewModel
 import com.example.projectcm.database.entities.TrashProblem
-import com.example.projectcm.database.entities.User
-import com.example.projectcm.database.repositories.TrashProblemRepository
-import com.example.projectcm.database.repositories.UserRepository
 import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
-import com.example.projectcm.utils.Result
 import com.google.android.gms.location.FusedLocationProviderClient
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
@@ -65,8 +56,15 @@ import org.osmdroid.views.overlay.Overlay
 
 
 @Composable
-fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProblemViewModel, navcontroller: NavController, fusedLocationClient: FusedLocationProviderClient) {
+fun MapScreen(
+    sharedViewModel: SharedViewModel,
+    trashProblemViewModel: TrashProblemViewModel,
+    navController: NavController,
+    fusedLocationClient: FusedLocationProviderClient
+) {
     val context = LocalContext.current
+    val currentUser by sharedViewModel.currentUser.collectAsState()
+    val trashProblems by trashProblemViewModel.trashProblems.collectAsState()
     val defaultLocation = GeoPoint(37.7749, -122.4194)
     var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
@@ -107,45 +105,52 @@ fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProb
                 controller.setCenter(userLocation ?: defaultLocation)
                 mapViewRef.value = this
 
-                // Add long press listener
-                overlays.add(object : Overlay() {
-                    override fun onLongPress(e: MotionEvent, mapView: MapView?): Boolean {
-                        val geoPoint = mapView?.projection?.fromPixels(e.x.toInt(), e.y.toInt())
-                        geoPoint?.let {
 
-                            longPressMarker?.let { marker ->
-                                mapView.overlays?.remove(marker)
-                            }
+                if (currentUser?.role == "User") {
+                    // Add long press listener
+                    overlays.add(object : Overlay() {
+                        override fun onLongPress(e: MotionEvent, mapView: MapView?): Boolean {
+                            val geoPoint = mapView?.projection?.fromPixels(e.x.toInt(), e.y.toInt())
+                            geoPoint?.let {
 
-                            Toast.makeText(context, "Marker clicked: $geoPoint", Toast.LENGTH_SHORT).show()
-
-                            // Create a long press marker
-                            longPressMarker = Marker(mapView).apply {
-                                position = geoPoint as GeoPoint?
-                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                                title = "New Marker"
-                                snippet = "Tap to take a photo and save"
-                                setOnMarkerClickListener { _, _ ->
-                                    val trashProblem = TrashProblem(
-                                        latitude = position.latitude,
-                                        longitude = position.longitude,
-                                        status = "Reported",
-                                        userId = sharedViewModel.currentUser.value?.id ?: 0,
-                                        imagePath = ""
-                                    )
-
-                                    trashProblemViewModel.setTrashProblem(trashProblem)
-
-                                    navcontroller.navigate("camera")
-                                    true
+                                longPressMarker?.let { marker ->
+                                    mapView.overlays?.remove(marker)
                                 }
+
+                                Toast.makeText(
+                                    context,
+                                    "Marker clicked: $geoPoint",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                // Create a long press marker
+                                longPressMarker = Marker(mapView).apply {
+                                    position = geoPoint as GeoPoint?
+                                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                    title = "New Marker"
+                                    snippet = "Tap to take a photo and save"
+                                    setOnMarkerClickListener { _, _ ->
+                                        val trashProblem = TrashProblem(
+                                            latitude = position.latitude,
+                                            longitude = position.longitude,
+                                            status = "Reported",
+                                            userId = sharedViewModel.currentUser.value?.id ?: 0,
+                                            imagePath = ""
+                                        )
+
+                                        trashProblemViewModel.setTrashProblem(trashProblem)
+
+                                        navController.navigate("camera")
+                                        true
+                                    }
+                                }
+                                mapView.overlays?.add(longPressMarker)
+                                mapView.invalidate()
                             }
-                            mapView.overlays?.add(longPressMarker)
-                            mapView.invalidate()
+                            return true
                         }
-                        return true
-                    }
-                })
+                    })
+                }
             }
         }, modifier = Modifier.fillMaxSize(), update = { mapView ->
             mapView.controller.setCenter(userLocation ?: defaultLocation)
@@ -156,10 +161,23 @@ fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProb
                     position = location
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     title = "You are here"
+                    icon = ContextCompat.getDrawable(mapView.context, R.drawable.my_location)
                 }
-                mapView.overlays.removeIf { it is Marker && (it as Marker).title == "You are here" }
+                mapView.overlays.removeIf { it is Marker && it.title == "You are here" }
                 mapView.overlays.add(userMarker)
                 mapView.invalidate()
+            }
+
+            mapView.overlays.removeIf { it is Marker && it.title?.startsWith("Trash Problem") == true }
+            trashProblems.forEach { problem ->
+                val marker = Marker(mapView).apply {
+                    position = GeoPoint(problem.latitude, problem.longitude)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    title = "Trash Problem #${problem.id}"
+                    snippet = if (problem.status == "Resolved") "Resolved Problem" else "Reported Problem"
+                    icon = if(problem.status == "Resolved") ContextCompat.getDrawable(mapView.context, R.drawable.resolved_marker) else ContextCompat.getDrawable(mapView.context, R.drawable.reported_marker)
+                }
+                mapView.overlays.add(marker)
             }
         })
 
@@ -172,12 +190,12 @@ fun MapScreen(sharedViewModel: SharedViewModel, trashProblemViewModel: TrashProb
                 .background(Color.White.copy(alpha = 0.8f), shape = RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
-            Text(
-                text = userLocation?.let {
-                    "Latitude: %.6f\nLongitude: %.6f".format(it.latitude, it.longitude)
-                } ?: "Latitude: %.6f\nLongitude: %.6f".format(defaultLocation.latitude, defaultLocation.longitude),
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.Black)
-            )
+            Text(text = userLocation?.let {
+                "Latitude: %.6f\nLongitude: %.6f".format(it.latitude, it.longitude)
+            } ?: "Latitude: %.6f\nLongitude: %.6f".format(
+                defaultLocation.latitude,
+                defaultLocation.longitude
+            ), style = MaterialTheme.typography.bodySmall.copy(color = Color.Black))
         }
 
         // Button to center the map in bottom-left corner

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -194,8 +195,6 @@ fun CameraContent(trashProblemViewModel: TrashProblemViewModel, navController: N
     val previewView = remember { PreviewView(context) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var showCamera by remember { mutableStateOf(false) }
-    var imageName by remember { mutableStateOf("") }
 
     // Initialize the camera provider and clean up on disposal
     DisposableEffect(Unit) {
@@ -210,41 +209,35 @@ fun CameraContent(trashProblemViewModel: TrashProblemViewModel, navController: N
     }
 
     if (imageUri != null) {
-        // Display the captured image
+        // Display the captured image with larger size
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(16.dp)
-
             ) {
                 imageUri?.let {
                     Image(
                         painter = rememberAsyncImagePainter(it),
                         contentDescription = "Captured Image",
                         modifier = Modifier
-                            .size(200.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(4f / 3f) // Enlarge image while maintaining aspect ratio
                             .padding(bottom = 16.dp)
                     )
                 }
 
                 Text(text = "Photo Captured!", style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = imageName, // Bind the value to the state
-                    onValueChange = { imageName = it }, // Update the state on user input
-                    label = { Text("Enter a name") },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(onClick = {
                     imageUri?.let {
-                        saveImageToGallery(it, imageName, context)
+                        val generatedName = "photo_${System.currentTimeMillis()}" // Generate name
+                        saveImageToGallery(it, generatedName, context)
                         trashProblemViewModel.setPhotoUri(imageUri!!)
                         trashProblemViewModel.saveTrashProblem()
                     }
                     imageUri = null // Clear the captured image
-                    imageName = ""  // Clear the name text field
-                    showCamera = false // Optionally hide the camera preview
                     navController.popBackStack()
                 }) {
                     Text("Save Photo")
@@ -252,13 +245,14 @@ fun CameraContent(trashProblemViewModel: TrashProblemViewModel, navController: N
             }
         }
     } else {
-        CameraPreview(cameraProvider = cameraProvider,
+        CameraPreview(
+            cameraProvider = cameraProvider,
             previewView = previewView,
             lifecycleOwner = lifecycleOwner,
-            onImageCaptured = { uri -> imageUri = uri })
+            onImageCaptured = { uri -> imageUri = uri }
+        )
     }
 }
-
 @Composable
 fun CameraPreview(
     cameraProvider: ProcessCameraProvider?,
@@ -328,36 +322,26 @@ fun captureImage(
 
 fun saveImageToGallery(imageUri: Uri, imageName: String, context: Context) {
     try {
-        // Get the content resolver
         val contentResolver = context.contentResolver
 
-        // Prepare the content values for the image
         val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "$imageName.jpg")  // Image name
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")  // Image MIME type
+            put(MediaStore.Images.Media.DISPLAY_NAME, "$imageName.jpg") // Use the generated name
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
             put(
                 MediaStore.Images.Media.RELATIVE_PATH,
                 Environment.DIRECTORY_PICTURES + "/CMProject"
-            )  // Path in the gallery
-            put(
-                MediaStore.Images.Media.DATE_ADDED,
-                System.currentTimeMillis() / 1000
-            )  // Current time in seconds
-            put(
-                MediaStore.Images.Media.DATE_MODIFIED,
-                System.currentTimeMillis() / 1000
-            )  // Current time in seconds
+            )
+            put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
+            put(MediaStore.Images.Media.DATE_MODIFIED, System.currentTimeMillis() / 1000)
         }
 
-        // Insert the image into the MediaStore
         val imageUriForGallery =
             contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 
-        // If the URI is not null, write the image to the gallery
         imageUriForGallery?.let { uri ->
             contentResolver.openOutputStream(uri).use { outputStream ->
                 contentResolver.openInputStream(imageUri)?.use { inputStream ->
-                    inputStream.copyTo(outputStream!!)  // Copy the image from the input stream to the output stream
+                    inputStream.copyTo(outputStream!!)
                 }
             }
             Toast.makeText(context, "Image saved to Gallery", Toast.LENGTH_SHORT).show()
