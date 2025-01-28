@@ -3,7 +3,10 @@ package com.example.projectcm.ui.mainapp.map
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,12 +41,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.FusedLocationProviderClient
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 
 @Composable
-fun MapScreen() {
+fun MapScreen(fusedLocationClient : FusedLocationProviderClient) {
     val context = LocalContext.current
     val defaultLocation = GeoPoint(37.7749, -122.4194)
     var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
@@ -55,17 +59,15 @@ fun MapScreen() {
     ) { granted ->
         hasLocationPermission = granted
         if (granted) {
-            val locationManager =
-                context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val provider = LocationManager.GPS_PROVIDER
-            if (ActivityCompat.checkSelfPermission(
-                    context, Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                locationManager.getLastKnownLocation(provider)?.let { location ->
-                    userLocation = GeoPoint(location.latitude, location.longitude)
+            getCurrentLocation(context, fusedLocationClient) { location ->
+                location?.let {
+                    userLocation = GeoPoint(it.latitude, it.longitude)
+                    Log.d("MapScreen", "Fused location: $userLocation")
+                } ?: run {
+                    Log.d("MapScreen", "No location available from FusedLocationProviderClient")
                 }
             }
+
         } else {
             Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
         }
@@ -182,5 +184,25 @@ fun MapScreen() {
     }
 }
 
-
+private fun getCurrentLocation(
+    context: Context,
+    fusedLocationClient: FusedLocationProviderClient,
+    onLocationReceived: (Location?) -> Unit
+) {
+    if (ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            onLocationReceived(location)
+        }.addOnFailureListener {
+            Log.e("MapScreen", "Error fetching location: ${it.message}")
+            onLocationReceived(null)
+        }
+    } else {
+        Log.e("MapScreen", "Permission not granted for location")
+        onLocationReceived(null)
+    }
+}
 

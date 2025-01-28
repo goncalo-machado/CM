@@ -56,6 +56,7 @@ class RegisterViewModel(private val userRepository: UserRepository) : ViewModel(
                     _registerResult.value = Result.Success(user)
                 }
             } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Registration failed", e)
                 _registerResult.value = Result.Error("Registration failed")
             }
         }

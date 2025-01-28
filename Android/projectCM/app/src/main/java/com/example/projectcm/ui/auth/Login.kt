@@ -50,6 +50,7 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
                     _loginResult.value = Result.Error("Invalid credentials")
                 }
             } catch (e: Exception) {
+                Log.e("LoginViewModel", "Login failed", e)
                 _loginResult.value = Result.Error("Login failed")
             }
         }

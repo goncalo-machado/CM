@@ -33,17 +33,25 @@ import com.example.projectcm.ui.mainapp.PushNotificationScreen
 import com.example.projectcm.ui.mainapp.camera.CameraScreen
 import com.example.projectcm.ui.mainapp.camera.ImageViewerScreen
 import com.example.projectcm.ui.mainapp.map.MapScreen
+import com.example.projectcm.ui.mainapp.problem_page.ProblemsPage
+import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.osmdroid.config.Configuration
 
 class MainActivity : ComponentActivity() {
     private lateinit var appContainer: AppContainer
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appContainer = AppContainer(this)
 
         val sharedViewModel: SharedViewModel by viewModels()
+
+        Configuration.getInstance().userAgentValue = "CMProject_98359"
 
         setContent {
             AppNavHost(
@@ -78,12 +86,15 @@ fun AppNavHost(
 ) {
     val loginViewModel = remember { LoginViewModel(container.userRepository) }
     val registerViewModel = remember { RegisterViewModel(container.userRepository) }
+    val problemsViewModel = remember { TrashProblemViewModel(container.trashProblemRepository) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination?.route
 
     val showBottomNav = currentDestination !in listOf("Login", "Register")
     val currentUser by sharedViewModel.currentUser.collectAsState()
+
+    val fusedLocationProviderClient = remember {container.fusedLocationClient}
 
     Log.d("AppNavHost", "Recomposed with user: $currentUser")
 
@@ -126,8 +137,8 @@ fun AppNavHost(
             composable("home") {
                 HomeScreen(navController = navController, sharedViewModel = sharedViewModel)
             }
-            composable("map") { MapScreen() }
-            composable("camera") { CameraScreen(navController) }
+            composable("Map") { MapScreen(fusedLocationProviderClient) }
+            composable("Camera") { CameraScreen(navController) }
             composable("PushNotification") { PushNotificationScreen() }
             composable("image_viewer/{imageUri}/{imageName}",
                 arguments = listOf(navArgument("imageUri") { type = NavType.StringType },
@@ -136,6 +147,9 @@ fun AppNavHost(
                 val imageName = backStackEntry.arguments?.getString("imageName")
                 ImageViewerScreen(imageUri = imageUri, imageName = imageName)
             }
+            composable("Problems") {
+                ProblemsPage(viewModel = problemsViewModel)
+            }
         }
     }
 }
@@ -143,8 +157,8 @@ fun AppNavHost(
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController, currentUser: User?) {
-    val adminItems = listOf("Home", "PushNotification", "Status")
-    val userItems = listOf("Home", "Map", "Camera")
+    val adminItems = listOf("Home", "PushNotification", "Problems")
+    val userItems = listOf("Home", "Map", "Camera","Problems")
     val items = if (currentUser?.role == "Admin") adminItems else userItems
 
     Log.d("BottomNavigationBar", "Recomposed with user: $currentUser")
