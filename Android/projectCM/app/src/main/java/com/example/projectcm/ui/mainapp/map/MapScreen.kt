@@ -175,8 +175,18 @@ fun MapScreen(
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     title = "Trash Problem #${problem.id}"
                     snippet = if (problem.status == "Resolved") "Resolved Problem" else "Reported Problem"
-                    icon = if(problem.status == "Resolved") ContextCompat.getDrawable(mapView.context, R.drawable.resolved_marker) else ContextCompat.getDrawable(mapView.context, R.drawable.reported_marker)
+                    icon = if (problem.status == "Resolved") ContextCompat.getDrawable(mapView.context, R.drawable.resolved_marker)
+                    else ContextCompat.getDrawable(mapView.context, R.drawable.reported_marker)
+
+                    // OnClick listener for the marker
+                    setOnMarkerClickListener { _, _ ->
+                        // Navigate to the ProblemDetailsScreen with the problem id
+                        val problemId = problem.id.toString()
+                        navController.navigate("problem_details/$problemId")
+                        true // return true to indicate that the click event was handled
+                    }
                 }
+
                 mapView.overlays.add(marker)
             }
         })

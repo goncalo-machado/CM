@@ -33,6 +33,7 @@ import com.example.projectcm.ui.mainapp.PushNotificationScreen
 import com.example.projectcm.ui.mainapp.camera.CameraScreen
 import com.example.projectcm.ui.mainapp.camera.ImageViewerScreen
 import com.example.projectcm.ui.mainapp.map.MapScreen
+import com.example.projectcm.ui.mainapp.problem_page.ProblemDetailsScreen
 import com.example.projectcm.ui.mainapp.problem_page.ProblemsPage
 import com.example.projectcm.ui.mainapp.problem_page.TrashProblemViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -156,7 +157,14 @@ fun AppNavHost(
                 ImageViewerScreen(imageUri = imageUri, imageName = imageName)
             }
             composable("Problems") {
-                ProblemsPage(sharedViewModel, trashProblemViewModel)
+                ProblemsPage(sharedViewModel, trashProblemViewModel, navController)
+            }
+            composable(
+                "problem_details/{problemId}",
+                arguments = listOf(navArgument("problemId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val problemId = backStackEntry.arguments?.getString("problemId")?.toInt() ?: return@composable
+                ProblemDetailsScreen(problemId, sharedViewModel, trashProblemViewModel,navController)
             }
         }
     }

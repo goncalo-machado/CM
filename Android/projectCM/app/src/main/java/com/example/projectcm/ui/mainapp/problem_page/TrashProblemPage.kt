@@ -3,12 +3,17 @@ package com.example.projectcm.ui.mainapp.problem_page
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.projectcm.SharedViewModel
 import com.example.projectcm.database.entities.TrashProblem
@@ -40,8 +46,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 class TrashProblemViewModel(
-    sharedViewModel: SharedViewModel,
-    private val repository: TrashProblemRepository
+    sharedViewModel: SharedViewModel, private val repository: TrashProblemRepository
 ) : ViewModel() {
 
     private val _sortByStatus = MutableStateFlow(true) // Default sorting is by status
@@ -64,6 +69,10 @@ class TrashProblemViewModel(
 
     fun toggleSortByStatus() {
         _sortByStatus.value = !_sortByStatus.value
+    }
+
+    fun getProblemById(problemId: Int): TrashProblem? {
+        return trashProblems.value.find { it.id == problemId }
     }
 
     fun resolveProblem(problem: TrashProblem, adminName: String) {
@@ -105,7 +114,11 @@ class TrashProblemViewModel(
 }
 
 @Composable
-fun ProblemsPage(sharedViewModel: SharedViewModel, viewModel: TrashProblemViewModel) {
+fun ProblemsPage(
+    sharedViewModel: SharedViewModel,
+    viewModel: TrashProblemViewModel,
+    navController: NavController
+) {
     val currentUser by sharedViewModel.currentUser.collectAsState()
     val problems by viewModel.trashProblems.collectAsState(emptyList())
     val sortByStatus by viewModel.sortByStatus.collectAsState()
@@ -134,65 +147,108 @@ fun ProblemsPage(sharedViewModel: SharedViewModel, viewModel: TrashProblemViewMo
         // Problems List
         LazyColumn {
             items(items = problems, key = { it.id }) { problem ->
-                ProblemCard(problem = problem, isAdmin = currentUser?.role == "Admin", onResolve = {
-                    currentUser?.let { viewModel.resolveProblem(problem, it.username) }
-                })
+                ProblemListItem(problem = problem) {
+                    navController.navigate("problem_details/${problem.id}")
+                }
             }
         }
     }
 }
 
 @Composable
-fun ProblemCard(problem: TrashProblem, isAdmin: Boolean, onResolve: () -> Unit) {
+fun ProblemListItem(problem: TrashProblem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 10.dp
-        ),
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Problem Details
-            Text(
-                "Reported by User ID: ${problem.userId}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text("Status: ${problem.status}", style = MaterialTheme.typography.bodyMedium)
-            Text(
-                "Reported At: ${problem.reportedAt}", style = MaterialTheme.typography.bodyMedium
-            )
-            problem.resolvedAt?.let {
-                Text("Resolved At: $it", style = MaterialTheme.typography.bodyMedium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Display Problem ID and Status without unnecessary weight modifier
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Problem ID: ${problem.id}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Status: ${problem.status}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-            Text(
-                "Coordinates: (${problem.latitude}, ${problem.longitude})",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                "Admin: ${problem.adminName ?: "None"}", style = MaterialTheme.typography.bodyMedium
-            )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Display Image
+            // Display Image if available
             if (problem.imagePath.isNotEmpty()) {
                 Image(
                     painter = rememberAsyncImagePainter(model = problem.imagePath),
                     contentDescription = "Problem Image",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
+                        .size(80.dp)
                         .clip(RoundedCornerShape(8.dp))
                 )
             }
+        }
+    }
+}
 
-            // Resolve Button (for Admins only)
-            if (isAdmin && problem.status == "Reported") {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = onResolve) {
-                    Text("Resolve")
+@Composable
+fun ProblemDetailsScreen(
+    problemId: Int, sharedViewModel: SharedViewModel, viewModel: TrashProblemViewModel, navController: NavController
+) {
+    val currentUser by sharedViewModel.currentUser.collectAsState()
+    val problem = viewModel.getProblemById(problemId) // Function to fetch the problem by ID
+
+    problem?.let {
+        Box(
+            contentAlignment = Alignment.Center, modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Id: ${problem.id}")
+                // Display Details
+                if (currentUser?.role == "Admin") {
+                    Text("Reported by User ID: ${problem.userId}")
+                }
+                Text("Status: ${problem.status}")
+                Text("Reported At: ${problem.reportedAt}")
+                problem.resolvedAt?.let {
+                    Text("Resolved At: $it")
+                }
+                Text("Latitude: ${problem.latitude}")
+                Text("Longitude: ${problem.longitude}")
+                Text("Admin Responsible: ${problem.adminName ?: "None"}")
+
+                if (currentUser?.role == "Admin" && it.status == "Reported") {
+                    Button(
+                        onClick = {
+                            viewModel.resolveProblem(it, currentUser!!.username)
+                            navController.navigate("problems")
+                        }, modifier = Modifier
+                            .padding(16.dp)
+                    ) {
+                        Text("Resolve")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Display Image
+                if (problem.imagePath.isNotEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = problem.imagePath),
+                        contentDescription = "Problem Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp))
+                    )
                 }
             }
         }
